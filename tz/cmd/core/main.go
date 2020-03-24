@@ -98,40 +98,33 @@ func (s *Speaker) String(n *Node) string {
 		sb.WriteString("	")
 		nextHopType := n.getNextHopType(s, idx)
 
+		sb.WriteString("(")
+		sb.WriteString(u.Str(s.Length[idx]))
+		sb.WriteString(") ")
+
 		switch s.Length[idx] {
 		case 0:
-			sb.WriteString("(0) ")
-			sb.WriteString(u.Str(dest.Asn))
 		case 1:
 			if dest.Asn != s.NextHop[idx].Asn {
 				panic("Destination != NextHop in length=1 paths")
 			}
-			sb.WriteString("(1) ")
 			sb.WriteString(linkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
-			sb.WriteString(u.Str(dest.Asn))
 		case 2:
-			sb.WriteString("(")
-			sb.WriteString(u.Str(s.Length[idx]))
-			sb.WriteString(") ")
 			sb.WriteString(linkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
 			sb.WriteString(u.Str(s.NextHop[idx].Asn))
 			sb.WriteString(" > ")
-			sb.WriteString(u.Str(dest.Asn))
 		default:
-			sb.WriteString("(")
-			sb.WriteString(u.Str(s.Length[idx]))
-			sb.WriteString(") ")
 			sb.WriteString(linkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
 			sb.WriteString(u.Str(s.NextHop[idx].Asn))
 			sb.WriteString(" > ")
 			sb.WriteString("...")
 			sb.WriteString(" > ")
-			sb.WriteString(u.Str(dest.Asn))
 		}
 
+		sb.WriteString(u.Str(dest.Asn))
 		sb.WriteString("\n")
 	}
 	return sb.String()
@@ -327,12 +320,14 @@ func (g *Graph) setStable(node *Node) {
 }
 
 // Activate evolves the status of a speaker
-func (g *Graph) Activate(nodeIndex int) {
+func (g *Graph) Activate(nodeIndex int) int {
 
 	nd := g.Nodes[nodeIndex]
 	sp := g.Speakers[nodeIndex]
 
 	g.setStable(nd)
+
+	var messagesSent int
 
 	for i := 0; i < len(sp.Fresh); i++ {
 		if sp.Fresh[i] {
@@ -348,14 +343,17 @@ func (g *Graph) Activate(nodeIndex int) {
 					// CUSTOMER: Advertise all routes
 					case linkType == ToCustomer:
 						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						messagesSent++
 
 					// PEER: Advertise routes from customers and peers? (TODO?)
 					case linkType == ToPeer && (nextHopType == ToCustomer || nextHopType == ToPeer):
 						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						messagesSent++
 
 					// PROVIDER: Advertise routes from customers
 					case linkType == ToProvider && nextHopType == ToCustomer:
 						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						messagesSent++
 					}
 
 					if flag {
@@ -367,6 +365,8 @@ func (g *Graph) Activate(nodeIndex int) {
 			sp.Fresh[i] = false
 		}
 	}
+
+	return messagesSent
 }
 
 var sh *Shell
@@ -482,12 +482,11 @@ func (g *Graph) Evolve() (stepsToConvergence int) {
 
 	var roundNum int = 0
 	for g.remaining > 0 {
-		fmt.Printf("Round %d : %d to activate\n", roundNum, g.remaining)
+		fmt.Printf("Round %d : %d activation queued\n", roundNum, g.remaining)
 
 		for k := range g.unstable {
 			sh.Overwrite("	Activating AS#", Green, u.Str(k.Asn), Clear)
-			g.Activate(k.Asn)
-			stepsToConvergence++
+			stepsToConvergence += g.Activate(k.Asn)
 		}
 		fmt.Print("\n")
 		roundNum++

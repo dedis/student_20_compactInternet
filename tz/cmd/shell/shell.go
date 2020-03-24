@@ -61,7 +61,7 @@ func (s *Shell) Overwrite(payload ...string) {
 	if pLength > maxOverwritten {
 		maxOverwritten = pLength
 	} else {
-		s.Write(strings.Repeat("  ", maxOverwritten-pLength))
+		s.Write(strings.Repeat("   ", maxOverwritten-pLength))
 	}
 }
 
