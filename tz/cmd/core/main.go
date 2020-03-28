@@ -506,25 +506,24 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 	if !g.validateAsn(originAsn) || !g.validateAsn(destinationAsn) {
 		fmt.Println("UNKNOWN ROUTE")
 		return nil, nil
-	} else {
-		route := make([]*Node, 0, 5)
-		linkTypes := make([]int, 0, 5)
-
-		cursorAsn := originAsn
-		for cursorAsn != destinationAsn {
-			routeNum := g.Speakers[cursorAsn].hasRoute(g.Nodes[destinationAsn])
-			if routeNum < 0 {
-				return nil, nil
-			}
-			route = append(route, g.Nodes[cursorAsn])
-			hopType := g.Nodes[cursorAsn].getNextHopType(g.Speakers[cursorAsn], routeNum)
-			linkTypes = append(linkTypes, hopType)
-			cursorAsn = g.Speakers[cursorAsn].NextHop[routeNum].Asn
-		}
-
-		// Add destination AS node
-		return append(route, g.Nodes[destinationAsn]), linkTypes
 	}
+	route := make([]*Node, 0, 5)
+	linkTypes := make([]int, 0, 5)
+
+	cursorAsn := originAsn
+	for cursorAsn != destinationAsn {
+		routeNum := g.Speakers[cursorAsn].hasRoute(g.Nodes[destinationAsn])
+		if routeNum < 0 {
+			return nil, nil
+		}
+		route = append(route, g.Nodes[cursorAsn])
+		hopType := g.Nodes[cursorAsn].getNextHopType(g.Speakers[cursorAsn], routeNum)
+		linkTypes = append(linkTypes, hopType)
+		cursorAsn = g.Speakers[cursorAsn].NextHop[routeNum].Asn
+	}
+
+	// Add destination AS node
+	return append(route, g.Nodes[destinationAsn]), linkTypes
 }
 
 // PrintRoute nicely prints the route from origin to destination returned by GetRoute
