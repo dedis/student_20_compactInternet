@@ -68,7 +68,7 @@ func LoadFromCsv(filename string) (Graph, error) {
 
 var sh *Shell
 
-var commandParams = map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"show": 1, "test-link": 2, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 // ExecCommand executes an instruction
 func (g *Graph) ExecCommand() bool {
@@ -91,6 +91,9 @@ func (g *Graph) ExecCommand() bool {
 	switch cmd[0] {
 	case "show":
 		g.printSpeakerStatus(u.Int(cmd[1]))
+
+	case "test-link":
+		g.TestLink(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "add-route":
 		g.SetDestinations(map[int]bool{u.Int(cmd[1]): true})
@@ -119,7 +122,7 @@ func main() {
 
 	sh = InitShell("$", " ")
 
-	graph, err := LoadFromCsv("../../../simulation/202003-edges.csv")
+	graph, err := LoadFromCsv("../../../simulation/202003-full-edges.csv")
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -144,6 +147,24 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 		fmt.Print("\n")
 	} else {
 		fmt.Printf("NO ROUTE FOUND\n")
+	}
+}
+
+// TestLink nicely prints the type of a link between two ASes, if it exists
+func (g *Graph) TestLink(originAsn int, destinationAsn int) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("LINK NOT FOUND")
+		}
+	}()
+
+	origNode, origOk := g.Nodes[originAsn]
+	destNode, destOk := g.Nodes[destinationAsn]
+	if !origOk || !destOk {
+		fmt.Println("INVALID AS SPECIFIED")
+	} else {
+		fmt.Printf("	LINK: #%d %s #%d\n", originAsn, linkTypeToSymbol(origNode.getNeighborType(destNode)), destinationAsn)
 	}
 }
 
