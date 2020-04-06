@@ -382,41 +382,43 @@ func (g *Graph) CalculateWitnesses(k int, l *Landmarks) (*map[int]*DijkstraGraph
 	return &witnessesByRound, &bunches
 }
 
-func expandPath(a int, b int, round int, witnesses *map[int]*DijkstraGraph) []int {
+func expandPath(a int, w int, b int, witnessesOnRound *DijkstraGraph, bunches *Clusters) []int {
 	hops := make([]int, 0, 4)
 
+	// From a to w (landmark)
 	prev := -1
-	for cursor := a; cursor != b; cursor = (*(*witnesses)[round])[cursor].nextHop.Asn {
+	for cursor := a; cursor != w; cursor = (*witnessesOnRound)[cursor].nextHop.Asn {
 		if prev == cursor {
-			return hops
+			panic("Wrong direction taken in path reconstruction")
+			//return hops
 		}
 		prev = cursor
 		hops = append(hops, cursor)
 	}
 
+	hops = append(hops, w)
+
+	// From b to w
+	hopsBtoW := make([]int, 0, 4)
+	for ; b != w; b = (*bunches)[b][w].nextHop.Asn {
+		hopsBtoW = append(hopsBtoW, b)
+	}
+	// Reverse this part of the path
+	for idx := len(hopsBtoW) - 1; idx >= 0; idx-- {
+		hops = append(hops, hopsBtoW[idx])
+	}
+
 	return hops
 }
 
-func printPath(from int, to int, w int, round int, witnesses *map[int]*DijkstraGraph) {
-	hopsFromW := expandPath(from, w, round, witnesses)
+func printPath(a int, w int, b int, witnessesOnRound *DijkstraGraph, bunches *Clusters) {
+	hops := expandPath(a, w, b, witnessesOnRound, bunches)
 
-	for _, h := range hopsFromW {
-		fmt.Print(u.Str(h) + " > ")
+	for id := 0; id < len(hops)-1; id++ {
+		fmt.Printf("%d > ", hops[id])
 	}
-	fmt.Print(u.Str(w))
-}
 
-// TODO: Refactor this function
-func printReversePath(to int, w int, bunches *Clusters) {
-	hopsToW := make([]int, 0, 4)
-	for to != w {
-		hopsToW = append(hopsToW, to)
-		to = (*bunches)[to][w].nextHop.Asn
-	}
-	for idx := len(hopsToW) - 1; idx >= 0; idx-- {
-		fmt.Printf(" > %d", hopsToW[idx])
-	}
-	fmt.Println("")
+	fmt.Printf("%d\n", hops[len(hops)-1])
 }
 
 // ApproximateDistance compute an approximation of the distance from 'from' to 'to'
@@ -433,8 +435,7 @@ func (g *Graph) ApproximateDistance(k int, from int, to int, witnesses *map[int]
 			// TODO: Refactor printing part
 			sh.Write("\n\t", "PATH: (", shell.Green, u.Str64(from2w+w2to.distance), shell.Clear, ") ")
 
-			printPath(from, to, w, i, witnesses)
-			printReversePath(to, w, bunches)
+			printPath(from, w, to, (*witnesses)[i], bunches)
 			return from2w + w2to.distance
 		}
 
