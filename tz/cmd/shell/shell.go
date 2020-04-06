@@ -42,8 +42,16 @@ func (s *Shell) GetCommand() []string {
 	return strings.Split(cmdString, s.ArgumentSeparator)
 }
 
-func (s *Shell) Write(payload string) {
-	fmt.Print(payload)
+// Print sends a string to the standard output
+func (s *Shell) Print(str string) {
+	fmt.Print(str)
+}
+
+// Write sends a variable number of strings to the standard output
+func (s *Shell) Write(payload ...string) {
+	for p := range payload {
+		s.Print(payload[p])
+	}
 }
 
 var maxOverwritten int = 0
