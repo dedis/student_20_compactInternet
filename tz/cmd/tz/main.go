@@ -141,6 +141,7 @@ func (g *Graph) LoadWitnessesFromCsv(filename string) *map[int]*DijkstraGraph {
 	return &witnesses
 }
 
+// LoadBunchesFromCsv imports bunches from a csv file
 func (g *Graph) LoadBunchesFromCsv(filename string) *Clusters {
 	csvFile, err := os.Open(filename)
 	if err != nil {
@@ -171,7 +172,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) *Clusters {
 
 var sh *Shell
 
-var commandParams = map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"route": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 // ExecCommand executes an instruction
 func (g *Graph) ExecCommand() bool {
@@ -192,18 +193,8 @@ func (g *Graph) ExecCommand() bool {
 	}
 
 	switch cmd[0] {
-	case "show":
-		g.printSpeakerStatus(u.Int(cmd[1]))
-
-	case "add-route":
-		g.SetDestinations(map[int]bool{u.Int(cmd[1]): true})
-
-	case "evolve":
-		convergenceSteps := g.Evolve()
-		fmt.Printf("Equilibrium reached, %d messages exchanged on the network\n", convergenceSteps)
-
 	case "route":
-		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
+		g.ApproximateDistance(k, u.Int(cmd[1]), u.Int(cmd[2]), witnesses, bunches)
 
 	case "help":
 		fmt.Println("The available commands are:")
@@ -218,6 +209,10 @@ func (g *Graph) ExecCommand() bool {
 	return true
 }
 
+var k int
+var witnesses *map[int]*DijkstraGraph
+var bunches *Clusters
+
 func main() {
 
 	sh = InitShell("$", " ")
@@ -230,7 +225,7 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	k := 3
+	k = 3
 	// TODO: This calculates witnesses and bunches from scratch (it will become a different command)
 	/*
 		landmarks := graph.ElectLandmarks(k)
@@ -297,17 +292,22 @@ func main() {
 
 	fmt.Println("/////////////")
 
+	// TODO: Clean this function
+
 	// Here, data are loaded from file
-	witnesses := graph.LoadWitnessesFromCsv("../../../simulation/202003-witnesses.csv")
-	bunches := graph.LoadBunchesFromCsv("../../../simulation/202003-bunches.csv")
+	sh.Write("Loading witnesses...")
+	witnesses = graph.LoadWitnessesFromCsv("../../../simulation/202003-witnesses.csv")
+	sh.Write("	", Yellow, "[OK]", Clear, "\n")
+	sh.Write("Loading bunches...")
+	bunches = graph.LoadBunchesFromCsv("../../../simulation/202003-bunches.csv")
+	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 
-	fmt.Println(graph.ApproximateDistance(k, 12637, 174, witnesses, bunches))
-	fmt.Println(graph.ApproximateDistance(k, 31976, 3269, witnesses, bunches))
+	//fmt.Println(graph.ApproximateDistance(k, 12637, 174, witnesses, bunches))
+	//fmt.Println(graph.ApproximateDistance(k, 31976, 3269, witnesses, bunches))
 
-	/*
-		for graph.ExecCommand() {
-		}
-	*/
+	for graph.ExecCommand() {
+	}
+
 }
 
 // PrintRoute nicely prints the route from origin to destination returned by GetRoute

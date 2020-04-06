@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"strings"
 
+	"../shell"
 	"../u"
 )
 
@@ -377,7 +378,12 @@ func (g *Graph) CalculateWitnesses(k int, l *Landmarks) (*map[int]*DijkstraGraph
 func expandPath(a int, b int, round int, witnesses *map[int]*DijkstraGraph) []int {
 	hops := make([]int, 0, 4)
 
+	prev := -1
 	for cursor := a; cursor != b; cursor = (*(*witnesses)[round])[cursor].nextHop.Asn {
+		if prev == cursor {
+			return hops
+		}
+		prev = cursor
 		hops = append(hops, cursor)
 	}
 
@@ -387,7 +393,9 @@ func expandPath(a int, b int, round int, witnesses *map[int]*DijkstraGraph) []in
 func printPath(from int, to int, w int, round int, witnesses *map[int]*DijkstraGraph) {
 	hopsFromW := expandPath(from, w, round, witnesses)
 
-	fmt.Println(hopsFromW)
+	for _, h := range hopsFromW {
+		fmt.Print(u.Str(h) + " > ")
+	}
 	fmt.Println(u.Str(w) + " ... " + u.Str(to))
 }
 
@@ -401,6 +409,10 @@ func (g *Graph) ApproximateDistance(k int, from int, to int, witnesses *map[int]
 
 		if w2to, ok := (*bunches)[to][w]; ok {
 			from2w := (*(*witnesses)[i])[from].distance
+
+			// TODO: Refactor printing part
+			sh.Write("\n\t", "PATH: (", shell.Green, u.Str64(from2w+w2to), shell.Clear, ") ")
+
 			printPath(from, to, w, i, witnesses)
 			return from2w + w2to
 		}
@@ -416,7 +428,7 @@ func (g *Graph) ApproximateDistance(k int, from int, to int, witnesses *map[int]
 		from = temp
 		w = (*(*witnesses)[i])[from].parent.Asn
 
-		fmt.Printf("%d, u:%d, v:%d, w:%d\n", i, from, to, w)
+		sh.Overwrite(fmt.Sprintf("Using level %s%d%s landmarks: from:%d, to:%d, neighbor:%d", shell.Red, i, shell.Clear, from, to, w))
 	}
 }
 
