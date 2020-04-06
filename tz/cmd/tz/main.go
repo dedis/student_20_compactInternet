@@ -161,10 +161,15 @@ func (g *Graph) LoadBunchesFromCsv(filename string) *Clusters {
 		bunchOf := u.Int(row[0])
 
 		if _, exists := bunches[bunchOf]; !exists {
-			bunches[bunchOf] = make(map[int]int64)
+			bunches[bunchOf] = make(map[int]*dijkstraNode)
 		}
 
-		bunches[bunchOf][u.Int(row[1])] = u.Int64(row[2])
+		bunches[bunchOf][u.Int(row[1])] = &dijkstraNode{
+			reference: u.Int(row[1]),
+			distance:  u.Int64(row[2]),
+			parent:    nil, // TODO: Change structure in the future
+			nextHop:   g.Nodes[u.Int(row[3])],
+		}
 	}
 
 	return &bunches
@@ -217,7 +222,7 @@ func main() {
 
 	sh = InitShell("$", " ")
 
-	graph, err := LoadFromCsv("../../../simulation/202003-edges.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
+	graph, err := LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -226,32 +231,33 @@ func main() {
 	rand.Seed(time.Now().UnixNano())
 
 	k = 3
+	//landmarks := graph.ElectLandmarks(k)
+
 	// TODO: This calculates witnesses and bunches from scratch (it will become a different command)
+	landmarks := make(Landmarks)
+	landmarks[0] = map[*Node]bool{
+		graph.Nodes[1]: true,
+		graph.Nodes[2]: true,
+		graph.Nodes[3]: true,
+		graph.Nodes[4]: true,
+		graph.Nodes[5]: true,
+		graph.Nodes[6]: true,
+		graph.Nodes[7]: true,
+	}
+	landmarks[1] = map[*Node]bool{
+		graph.Nodes[1]: true,
+		graph.Nodes[2]: true,
+		graph.Nodes[3]: true,
+		graph.Nodes[4]: true,
+		graph.Nodes[7]: true,
+	}
+	landmarks[2] = map[*Node]bool{
+		graph.Nodes[4]: true,
+		graph.Nodes[7]: true,
+	}
+	landmarks[3] = map[*Node]bool{}
+
 	/*
-		landmarks := graph.ElectLandmarks(k)
-
-		/*
-			landmarks := make(Landmarks)
-			landmarks[0] = map[*Node]bool{
-				graph.Nodes[1]: true,
-				graph.Nodes[2]: true,
-				graph.Nodes[3]: true,
-				graph.Nodes[4]: true,
-				graph.Nodes[5]: true,
-				graph.Nodes[6]: true,
-				graph.Nodes[7]: true,
-			}
-			landmarks[1] = map[*Node]bool{
-				graph.Nodes[1]: true,
-				graph.Nodes[3]: true,
-				graph.Nodes[5]: true,
-			}
-			landmarks[2] = map[*Node]bool{
-				graph.Nodes[5]: true,
-			}
-			landmarks[3] = map[*Node]bool{}
-
-
 			landmarks[0] = map[*Node]bool{
 				graph.Nodes[1]: true,
 				graph.Nodes[2]: true,
@@ -273,7 +279,6 @@ func main() {
 
 		fmt.Println("Landmarks:")
 		fmt.Println(landmarks)
-
 		witnesses, bunches := graph.CalculateWitnesses(k, landmarks)
 
 		WriteWitnessesToCsv("../../../simulation/202003-witnesses.csv", witnesses)
@@ -290,16 +295,21 @@ func main() {
 			fmt.Println(bunches)
 	*/
 
+	witnesses, bunches = graph.CalculateWitnesses(k, &landmarks)
+
+	WriteWitnessesToCsv("../../../simulation/test-witnesses.csv", witnesses)
+	WriteToCsv("../../../simulation/test-bunches.csv", &map[int]Serializable{0: bunches})
+
 	fmt.Println("/////////////")
 
 	// TODO: Clean this function
 
 	// Here, data are loaded from file
 	sh.Write("Loading witnesses...")
-	witnesses = graph.LoadWitnessesFromCsv("../../../simulation/202003-witnesses.csv")
+	witnesses = graph.LoadWitnessesFromCsv("../../../simulation/test-witnesses.csv")
 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 	sh.Write("Loading bunches...")
-	bunches = graph.LoadBunchesFromCsv("../../../simulation/202003-bunches.csv")
+	bunches = graph.LoadBunchesFromCsv("../../../simulation/test-bunches.csv")
 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 
 	//fmt.Println(graph.ApproximateDistance(k, 12637, 174, witnesses, bunches))

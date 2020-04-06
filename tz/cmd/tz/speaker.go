@@ -128,6 +128,11 @@ func (d *DijkstraGraph) Serialize(index int) [][]string {
 	rows := make([][]string, 0, len(*d))
 
 	for key, val := range *d {
+		// TODO: Debug
+		if key != val.reference {
+			fmt.Printf("For key %d, dijkstraNode (ref %d) contained: %s\n", key, val.reference, val.String())
+			panic("Debug check failed")
+		}
 		rows = append(rows, []string{u.Str(index), u.Str(key), u.Str64(val.distance), u.Str(val.parent.Asn), u.Str(val.nextHop.Asn)})
 	}
 
@@ -157,16 +162,17 @@ func (f *Frontier) printFrontier() {
 	fmt.Println(f.Zones)
 }
 
-// Clusters is a set of sets of Asn
-type Clusters map[int]map[int]int64
+// Clusters represents both Clusters and Bunches in the algorithm
+// !!WARNING!! TODO: Right now, clusters loaded from file do not have 'parent' filled
+type Clusters map[int]map[int]*dijkstraNode
 
 // Serialize implements the interface Serializable for *Clusters
 func (c *Clusters) Serialize(index int) [][]string {
 	rows := make([][]string, 0, len(*c))
 
 	for key, value := range *c {
-		for asn, dist := range value {
-			rows = append(rows, []string{u.Str(key), u.Str(asn), u.Str64(dist)})
+		for asn, nd := range value {
+			rows = append(rows, []string{u.Str(key), u.Str(asn), u.Str64(nd.distance), u.Str(nd.nextHop.Asn)})
 		}
 	}
 
@@ -313,10 +319,10 @@ func (c *Clusters) calculateClustersForRound(g *Graph, k int, l *Landmarks, prev
 			wClusterGraph.runDijkstra(g, &clusterFrontier, 1)
 
 			// Create cluster for w
-			(*c)[w.Asn] = make(map[int]int64)
+			(*c)[w.Asn] = make(map[int]*dijkstraNode)
 			for nd := range wClusterGraph {
 				if wClusterGraph[nd].distance < (*prevRound)[nd].distance {
-					(*c)[w.Asn][nd] = wClusterGraph[nd].distance
+					(*c)[w.Asn][nd] = wClusterGraph[nd]
 				}
 			}
 		}
@@ -356,6 +362,7 @@ func (g *Graph) CalculateWitnesses(k int, l *Landmarks) (*map[int]*DijkstraGraph
 			prevDijkstraNode, exists := (*witnessesByRound[i+1])[asn]
 			if exists && (*witnessesByRound[i])[asn].distance == prevDijkstraNode.distance {
 				(*witnessesByRound[i])[asn].parent = prevDijkstraNode.parent
+				(*witnessesByRound[i])[asn].nextHop = prevDijkstraNode.nextHop
 			}
 		}
 	}
@@ -363,11 +370,11 @@ func (g *Graph) CalculateWitnesses(k int, l *Landmarks) (*map[int]*DijkstraGraph
 	bunches := make(Clusters)
 
 	for asn := range g.Nodes {
-		bunches[asn] = make(map[int]int64)
+		bunches[asn] = make(map[int]*dijkstraNode)
 
 		for q := range clusters {
-			if dist, ok := clusters[q][asn]; ok {
-				bunches[asn][q] = dist
+			if cl, ok := clusters[q][asn]; ok {
+				bunches[asn][q] = cl
 			}
 		}
 	}
@@ -396,7 +403,20 @@ func printPath(from int, to int, w int, round int, witnesses *map[int]*DijkstraG
 	for _, h := range hopsFromW {
 		fmt.Print(u.Str(h) + " > ")
 	}
-	fmt.Println(u.Str(w) + " ... " + u.Str(to))
+	fmt.Print(u.Str(w))
+}
+
+// TODO: Refactor this function
+func printReversePath(to int, w int, bunches *Clusters) {
+	hopsToW := make([]int, 0, 4)
+	for to != w {
+		hopsToW = append(hopsToW, to)
+		to = (*bunches)[to][w].nextHop.Asn
+	}
+	for idx := len(hopsToW) - 1; idx >= 0; idx-- {
+		fmt.Printf(" > %d", hopsToW[idx])
+	}
+	fmt.Println("")
 }
 
 // ApproximateDistance compute an approximation of the distance from 'from' to 'to'
@@ -411,10 +431,11 @@ func (g *Graph) ApproximateDistance(k int, from int, to int, witnesses *map[int]
 			from2w := (*(*witnesses)[i])[from].distance
 
 			// TODO: Refactor printing part
-			sh.Write("\n\t", "PATH: (", shell.Green, u.Str64(from2w+w2to), shell.Clear, ") ")
+			sh.Write("\n\t", "PATH: (", shell.Green, u.Str64(from2w+w2to.distance), shell.Clear, ") ")
 
 			printPath(from, to, w, i, witnesses)
-			return from2w + w2to
+			printReversePath(to, w, bunches)
+			return from2w + w2to.distance
 		}
 
 		// TODO: Debug check
