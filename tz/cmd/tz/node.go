@@ -35,7 +35,7 @@ func linkTypeToSymbol(linkType int) string {
 	} else if linkType == -1 {
 		return `v`
 	} else {
-		return "?"
+		return ">"
 	}
 }
 

@@ -9,24 +9,20 @@ import (
 	"strings"
 	"time"
 
+	"../shell"
 	. "../shell"
 	"../u"
 )
 
 // LoadFromCsv imports the structure of the AS graph from a preprocessed .csv file
-func LoadFromCsv(filename string) (Graph, error) {
+func LoadFromCsv(graph *Graph, filename string) error {
 
 	csvfile, err := os.Open(filename)
 	if err != nil {
-		return Graph{}, err
+		return err
 	}
 
 	reader := csv.NewReader(csvfile)
-
-	nodes := make(map[int]*Node)
-	speakers := make(map[int]*Speaker)
-	unstableSet := make(map[*Node]bool)
-	remaining := 0
 
 	var currAsn int = -1
 	var currLinks Link = make(Link, 5)
@@ -38,20 +34,14 @@ func LoadFromCsv(filename string) (Graph, error) {
 		if err == io.EOF {
 			if currAsn != -1 {
 				tempNode := ToNode(currAsn, currLinks, currTypes)
-				nodes[currAsn] = &tempNode
-				speakers[currAsn] = InitSpeaker(&tempNode)
-				unstableSet[nodes[currAsn]] = true
-				remaining++
+				graph.Nodes[currAsn] = &tempNode
 			}
 			break
 		}
 		if u.Int(row[0]) != currAsn {
 			if currAsn != -1 {
 				tempNode := ToNode(currAsn, currLinks, currTypes)
-				nodes[currAsn] = &tempNode
-				speakers[currAsn] = InitSpeaker(&tempNode)
-				unstableSet[nodes[currAsn]] = true
-				remaining++
+				graph.Nodes[currAsn] = &tempNode
 			}
 			currAsn = u.Int(row[0])
 			currLinks = currLinks[:0]
@@ -64,7 +54,7 @@ func LoadFromCsv(filename string) (Graph, error) {
 		}
 	}
 
-	return Graph{Nodes: nodes, Speakers: speakers, unstable: unstableSet, remaining: remaining}, nil
+	return nil
 
 }
 
@@ -103,15 +93,13 @@ func WriteToCsv(filename string, payload *map[int]Serializable) {
 	}
 }
 
-func (g *Graph) LoadWitnessesFromCsv(filename string) *map[int]*DijkstraGraph {
+func (g *Graph) LoadWitnessesFromCsv(filename string) {
 	csvFile, err := os.Open(filename)
 	if err != nil {
 		panic("Could not open witness file")
 	}
 
 	reader := csv.NewReader(csvFile)
-
-	witnesses := make(map[int]*DijkstraGraph)
 
 	var currRound int = -1
 
@@ -126,10 +114,10 @@ func (g *Graph) LoadWitnessesFromCsv(filename string) *map[int]*DijkstraGraph {
 		if nxRound := u.Int(row[0]); nxRound != currRound {
 			currRound = nxRound
 			tempGraph := make(DijkstraGraph)
-			witnesses[currRound] = &tempGraph
+			g.Witnesses[currRound] = &tempGraph
 		}
 
-		(*witnesses[currRound])[u.Int(row[1])] = &dijkstraNode{
+		(*g.Witnesses[currRound])[u.Int(row[1])] = &dijkstraNode{
 			reference: u.Int(row[1]),
 			distance:  u.Int64(row[2]),
 			parent:    g.Nodes[u.Int(row[3])],
@@ -137,20 +125,16 @@ func (g *Graph) LoadWitnessesFromCsv(filename string) *map[int]*DijkstraGraph {
 		}
 
 	}
-
-	return &witnesses
 }
 
 // LoadBunchesFromCsv imports bunches from a csv file
-func (g *Graph) LoadBunchesFromCsv(filename string) *Clusters {
+func (g *Graph) LoadBunchesFromCsv(filename string) {
 	csvFile, err := os.Open(filename)
 	if err != nil {
 		panic("Could not open witness file")
 	}
 
 	reader := csv.NewReader(csvFile)
-
-	bunches := make(Clusters)
 
 	for i := 0; ; i++ {
 		row, err := reader.Read()
@@ -160,19 +144,17 @@ func (g *Graph) LoadBunchesFromCsv(filename string) *Clusters {
 
 		bunchOf := u.Int(row[0])
 
-		if _, exists := bunches[bunchOf]; !exists {
-			bunches[bunchOf] = make(map[int]*dijkstraNode)
+		if _, exists := g.Bunches[bunchOf]; !exists {
+			g.Bunches[bunchOf] = make(map[int]*dijkstraNode)
 		}
 
-		bunches[bunchOf][u.Int(row[1])] = &dijkstraNode{
+		g.Bunches[bunchOf][u.Int(row[1])] = &dijkstraNode{
 			reference: u.Int(row[1]),
 			distance:  u.Int64(row[2]),
 			parent:    nil, // TODO: Change structure in the future
 			nextHop:   g.Nodes[u.Int(row[3])],
 		}
 	}
-
-	return &bunches
 }
 
 var sh *Shell
@@ -199,7 +181,7 @@ func (g *Graph) ExecCommand() bool {
 
 	switch cmd[0] {
 	case "route":
-		g.ApproximateDistance(k, u.Int(cmd[1]), u.Int(cmd[2]), witnesses, bunches)
+		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "help":
 		fmt.Println("The available commands are:")
@@ -214,15 +196,20 @@ func (g *Graph) ExecCommand() bool {
 	return true
 }
 
-var k int
-var witnesses *map[int]*DijkstraGraph
-var bunches *Clusters
+//var k int
+
+//var witnesses *map[int]*DijkstraGraph
+//var bunches *Clusters
 
 func main() {
 
 	sh = InitShell("$", " ")
 
-	graph, err := LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
+	// Initialize the graph
+	graph := InitGraph()
+	graph.K = 3
+
+	err := LoadFromCsv(&graph, "../../../simulation/test.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
@@ -230,12 +217,10 @@ func main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	k = 3
 	//landmarks := graph.ElectLandmarks(k)
 
 	// TODO: This calculates witnesses and bunches from scratch (it will become a different command)
-	landmarks := make(Landmarks)
-	landmarks[0] = map[*Node]bool{
+	graph.Landmarks[0] = map[*Node]bool{
 		graph.Nodes[1]: true,
 		graph.Nodes[2]: true,
 		graph.Nodes[3]: true,
@@ -244,18 +229,18 @@ func main() {
 		graph.Nodes[6]: true,
 		graph.Nodes[7]: true,
 	}
-	landmarks[1] = map[*Node]bool{
+	graph.Landmarks[1] = map[*Node]bool{
 		graph.Nodes[1]: true,
 		graph.Nodes[2]: true,
 		graph.Nodes[3]: true,
 		graph.Nodes[4]: true,
 		graph.Nodes[7]: true,
 	}
-	landmarks[2] = map[*Node]bool{
+	graph.Landmarks[2] = map[*Node]bool{
 		graph.Nodes[4]: true,
 		graph.Nodes[7]: true,
 	}
-	landmarks[3] = map[*Node]bool{}
+	graph.Landmarks[3] = map[*Node]bool{}
 
 	/*
 			landmarks[0] = map[*Node]bool{
@@ -295,10 +280,10 @@ func main() {
 			fmt.Println(bunches)
 	*/
 
-	witnesses, bunches = graph.CalculateWitnesses(k, &landmarks)
+	graph.Evolve()
 
-	WriteWitnessesToCsv("../../../simulation/test-witnesses.csv", witnesses)
-	WriteToCsv("../../../simulation/test-bunches.csv", &map[int]Serializable{0: bunches})
+	WriteWitnessesToCsv("../../../simulation/test-witnesses.csv", &graph.Witnesses)
+	WriteToCsv("../../../simulation/test-bunches.csv", &map[int]Serializable{0: &graph.Bunches})
 
 	fmt.Println("/////////////")
 
@@ -306,10 +291,10 @@ func main() {
 
 	// Here, data are loaded from file
 	sh.Write("Loading witnesses...")
-	witnesses = graph.LoadWitnessesFromCsv("../../../simulation/test-witnesses.csv")
+	graph.LoadWitnessesFromCsv("../../../simulation/test-witnesses.csv")
 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 	sh.Write("Loading bunches...")
-	bunches = graph.LoadBunchesFromCsv("../../../simulation/test-bunches.csv")
+	graph.LoadBunchesFromCsv("../../../simulation/test-bunches.csv")
 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 
 	//fmt.Println(graph.ApproximateDistance(k, 12637, 174, witnesses, bunches))
@@ -325,34 +310,15 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 	path, types := g.GetRoute(originAsn, destinationAsn)
 
 	if path != nil {
-		fmt.Printf("length (%d): ", len(path))
-		fmt.Printf("	%d", originAsn)
+		sh.Write("PATH:", "\t", "(", shell.Green, u.Str(len(path)-1), shell.Clear, ") ")
+		sh.Write(fmt.Sprintf("\t%d", originAsn))
 
 		for idx, step := range path[1:] {
-			fmt.Printf(" %s %d", linkTypeToSymbol(types[idx]), step.Asn)
+			sh.Write(fmt.Sprintf(" %s %d", linkTypeToSymbol(types[idx]), step.Asn))
 		}
 
-		fmt.Print("\n")
+		sh.Write("\n")
 	} else {
-		fmt.Printf("NO ROUTE FOUND\n")
+		sh.Write("NO ROUTE FOUND\n")
 	}
-}
-
-// Evolve updates the system until its convergence
-func (g *Graph) Evolve() (stepsToConvergence int) {
-	stepsToConvergence = 0
-
-	var roundNum int = 0
-	for g.remaining > 0 {
-		fmt.Printf("Round %d : %d activation queued\n", roundNum, g.remaining)
-
-		for k := range g.unstable {
-			sh.Overwrite("	Activating AS#", Green, u.Str(k.Asn), Clear)
-			stepsToConvergence += g.Activate(k.Asn)
-		}
-		fmt.Print("\n")
-		roundNum++
-	}
-
-	return
 }
