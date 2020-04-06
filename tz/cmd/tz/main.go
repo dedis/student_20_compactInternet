@@ -232,35 +232,15 @@ func main() {
 	graph.Landmarks[1] = map[*Node]bool{
 		graph.Nodes[1]: true,
 		graph.Nodes[2]: true,
-		graph.Nodes[3]: true,
-		graph.Nodes[4]: true,
 		graph.Nodes[7]: true,
 	}
 	graph.Landmarks[2] = map[*Node]bool{
-		graph.Nodes[4]: true,
+		graph.Nodes[1]: true,
 		graph.Nodes[7]: true,
 	}
 	graph.Landmarks[3] = map[*Node]bool{}
 
 	/*
-			landmarks[0] = map[*Node]bool{
-				graph.Nodes[1]: true,
-				graph.Nodes[2]: true,
-				graph.Nodes[3]: true,
-				graph.Nodes[4]: true,
-				graph.Nodes[5]: true,
-				graph.Nodes[6]: true,
-				graph.Nodes[7]: true,
-			}
-			landmarks[1] = map[*Node]bool{
-				graph.Nodes[4]: true,
-				graph.Nodes[6]: true,
-				graph.Nodes[7]: true,
-			}
-			landmarks[2] = map[*Node]bool{
-				graph.Nodes[6]: true,
-			}
-			landmarks[3] = map[*Node]bool{}
 
 		fmt.Println("Landmarks:")
 		fmt.Println(landmarks)
@@ -297,9 +277,6 @@ func main() {
 	graph.LoadBunchesFromCsv("../../../simulation/test-bunches.csv")
 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 
-	//fmt.Println(graph.ApproximateDistance(k, 12637, 174, witnesses, bunches))
-	//fmt.Println(graph.ApproximateDistance(k, 31976, 3269, witnesses, bunches))
-
 	for graph.ExecCommand() {
 	}
 
@@ -310,7 +287,7 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 	path, types := g.GetRoute(originAsn, destinationAsn)
 
 	if path != nil {
-		sh.Write("PATH:", "\t", "(", shell.Green, u.Str(len(path)-1), shell.Clear, ") ")
+		sh.Write("PATH: (", shell.Green, u.Str(len(path)-1), shell.Clear, ") ")
 		sh.Write(fmt.Sprintf("\t%d", originAsn))
 
 		for idx, step := range path[1:] {

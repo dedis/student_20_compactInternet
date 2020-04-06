@@ -215,9 +215,6 @@ func (g *Graph) ApproximatePath(from int, to int) (int64, []int) {
 		if w2to, ok := g.Bunches[to][w]; ok {
 			from2w := (*g.Witnesses[i])[from].distance
 
-			// TODO: Refactor printing part
-			sh.Write("\n\t", "PATH: (", shell.Green, u.Str64(from2w+w2to.distance), shell.Clear, ") ")
-
 			return from2w + w2to.distance, g.expandPath(from, w, to, i)
 		}
 
@@ -232,7 +229,7 @@ func (g *Graph) ApproximatePath(from int, to int) (int64, []int) {
 		from = temp
 		w = (*g.Witnesses[i])[from].parent.Asn
 
-		sh.Overwrite(fmt.Sprintf("Using level %s%d%s landmarks: from:%d, to:%d, neighbor:%d", shell.Red, i, shell.Clear, from, to, w))
+		sh.Overwrite(fmt.Sprintf("Using level %s%d%s landmarks: from:%d, to:%d, neighbor:%d\n", shell.Red, i, shell.Clear, from, to, w))
 	}
 }
 
@@ -253,8 +250,6 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 		nodeHops = append(nodeHops, g.Nodes[h])
 		nodeTypes = append(nodeTypes, 100)
 	}
-
-	fmt.Println(hops)
 
 	return nodeHops, nodeTypes
 }
