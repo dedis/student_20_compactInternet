@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	. "dedis.epfl.ch/core"
 	. "dedis.epfl.ch/shell"
 	"dedis.epfl.ch/u"
 )
@@ -138,7 +139,7 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 		fmt.Printf("	%d", originAsn)
 
 		for idx, step := range path[1:] {
-			fmt.Printf(" %s %d", linkTypeToSymbol(types[idx]), step.Asn)
+			fmt.Printf(" %s %d", LinkTypeToSymbol(types[idx]), step.Asn)
 		}
 
 		fmt.Print("\n")
@@ -161,7 +162,7 @@ func (g *Graph) TestLink(originAsn int, destinationAsn int) {
 	if !origOk || !destOk {
 		fmt.Println("INVALID AS SPECIFIED")
 	} else {
-		fmt.Printf("	LINK: #%d %s #%d\n", originAsn, linkTypeToSymbol(origNode.getNeighborType(destNode)), destinationAsn)
+		fmt.Printf("	LINK: #%d %s #%d\n", originAsn, LinkTypeToSymbol(origNode.GetNeighborType(destNode)), destinationAsn)
 	}
 }
 
@@ -171,13 +172,13 @@ func (g *Graph) Evolve() (stepsToConvergence int) {
 
 	var roundNum int = 0
 	for g.remaining > 0 {
-		fmt.Printf("Round %d : %d activation queued\n", roundNum, g.remaining)
+		//fmt.Printf("Round %d : %d activation queued\n", roundNum, g.remaining)
 
 		for k := range g.unstable {
-			sh.Overwrite("	Activating AS#", Green, u.Str(k.Asn), Clear)
+			//sh.Overwrite("	Activating AS#", Green, u.Str(k.Asn), Clear)
 			stepsToConvergence += g.Activate(k.Asn)
 		}
-		fmt.Print("\n")
+		//fmt.Print("\n")
 		roundNum++
 	}
 

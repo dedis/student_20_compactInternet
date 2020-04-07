@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/shell"
 	. "dedis.epfl.ch/shell"
 	u "dedis.epfl.ch/u"
@@ -297,7 +298,7 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 		sh.Write(fmt.Sprintf("\t%d", originAsn))
 
 		for idx, step := range path[1:] {
-			sh.Write(fmt.Sprintf(" %s %d", linkTypeToSymbol(types[idx]), step.Asn))
+			sh.Write(fmt.Sprintf(" %s %d", LinkTypeToSymbol(types[idx]), step.Asn))
 		}
 
 		sh.Write("\n")

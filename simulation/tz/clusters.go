@@ -1,6 +1,9 @@
 package tz
 
-import "dedis.epfl.ch/u"
+import (
+	. "dedis.epfl.ch/core"
+	"dedis.epfl.ch/u"
+)
 
 // Clusters represents both Clusters and Bunches in the algorithm
 // !!WARNING!! TODO: Right now, clusters loaded from file do not have 'parent' filled
@@ -51,4 +54,18 @@ func (c *Clusters) calculateClustersForRound(nodes *map[int]*Node, k int, l *Lan
 			}
 		}
 	}
+}
+
+// Copy returns a duplicate of Clusters
+func (c *Clusters) Copy() *Clusters {
+	clusterCopy := make(Clusters)
+
+	for k, cl := range *c {
+		clusterCopy[k] = make(map[int]*dijkstraNode)
+		for ci, dn := range cl {
+			clusterCopy[k][ci] = dn
+		}
+	}
+
+	return &clusterCopy
 }

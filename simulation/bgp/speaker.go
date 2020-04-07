@@ -3,6 +3,7 @@ package bgp
 import (
 	"strings"
 
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
 )
 
@@ -31,15 +32,15 @@ func (s *Speaker) String(n *Node) string {
 			if dest.Asn != s.NextHop[idx].Asn {
 				panic("Destination != NextHop in length=1 paths")
 			}
-			sb.WriteString(linkTypeToSymbol(nextHopType))
+			sb.WriteString(LinkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
 		case 2:
-			sb.WriteString(linkTypeToSymbol(nextHopType))
+			sb.WriteString(LinkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
 			sb.WriteString(u.Str(s.NextHop[idx].Asn))
 			sb.WriteString(" > ")
 		default:
-			sb.WriteString(linkTypeToSymbol(nextHopType))
+			sb.WriteString(LinkTypeToSymbol(nextHopType))
 			sb.WriteString(" ")
 			sb.WriteString(u.Str(s.NextHop[idx].Asn))
 			sb.WriteString(" > ")
@@ -84,7 +85,7 @@ func (s *Speaker) addDestination(currNode *Node, dest *Node, nextHop *Node, leng
 func (s *Speaker) updateDestination(currNode *Node, routeIndex int, dest *Node, nextHop *Node, length int) bool {
 	// Compare with current path
 	oldNextType := s.getNextHopType(currNode, routeIndex)
-	newNextType := currNode.getNeighborType(nextHop)
+	newNextType := currNode.GetNeighborType(nextHop)
 
 	// Applies: customer < peer < provider (smaller is better)
 	if (newNextType < oldNextType) ||
@@ -105,7 +106,7 @@ func (s *Speaker) getNextHopType(n *Node, destIndex int) int {
 		// The node *n is the origin, return ToCustomer
 		return ToCustomer
 	}
-	return n.getNeighborType(s.NextHop[destIndex])
+	return n.GetNeighborType(s.NextHop[destIndex])
 }
 
 func (s *Speaker) advertise(neighborNode *Node, destination *Node, nextHop *Node, length int) bool {
@@ -116,4 +117,21 @@ func (s *Speaker) advertise(neighborNode *Node, destination *Node, nextHop *Node
 	}
 	// The neighbor has the destination, check which one is better
 	return s.updateDestination(neighborNode, routeNum, destination, nextHop, length)
+}
+
+// Copy returns a duplicate of the Speaker
+func (s *Speaker) Copy() *Speaker {
+	copySpeaker := Speaker{
+		Fresh:        make([]bool, 0, len(s.Fresh)),
+		Destinations: make([]*Node, 0, len(s.Destinations)),
+		NextHop:      make([]*Node, 0, len(s.NextHop)),
+		Length:       make([]int, 0, len(s.Length)),
+	}
+
+	copy(copySpeaker.Fresh, s.Fresh)
+	copy(copySpeaker.Destinations, s.Destinations)
+	copy(copySpeaker.NextHop, s.NextHop)
+	copy(copySpeaker.Length, s.Length)
+
+	return &copySpeaker
 }

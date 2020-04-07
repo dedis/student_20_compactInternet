@@ -3,6 +3,7 @@ package bgp
 import (
 	"fmt"
 
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
 )
 
@@ -21,6 +22,11 @@ func InitGraph() Graph {
 		unstable:  make(map[*Node]bool),
 		remaining: 0,
 	}
+}
+
+// GetNodes returns a pointer to the map of Nodes
+func (g *Graph) GetNodes() *map[int]*Node {
+	return &g.Nodes
 }
 
 // SetDestinations updates the speakers according to the set of chosen destinations
@@ -142,4 +148,30 @@ func (g *Graph) printSpeakerStatus(asn int) {
 		fmt.Println("	ROUTES: ")
 		fmt.Println(g.Speakers[asn].String(g.Nodes[asn]))
 	}
+}
+
+// Copy returns a (partially) new Graph
+func (g *Graph) Copy() AbstractGraph {
+	// TODO: Think if deeper copy is needed
+	copyGraph := Graph{
+		Nodes:     make(map[int]*Node),
+		Speakers:  make(map[int]*Speaker),
+		unstable:  make(map[*Node]bool),
+		remaining: g.remaining, // Just an int
+	}
+
+	for k, v := range g.Nodes {
+		copyGraph.Nodes[k] = v
+	}
+
+	// Deep copy of Speakers
+	for k, v := range g.Speakers {
+		copyGraph.Speakers[k] = v.Copy()
+	}
+
+	for k := range g.unstable {
+		copyGraph.unstable[k] = true
+	}
+
+	return &copyGraph
 }

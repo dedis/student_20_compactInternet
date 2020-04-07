@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
 )
 

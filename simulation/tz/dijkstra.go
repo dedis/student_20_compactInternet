@@ -3,6 +3,7 @@ package tz
 import (
 	"fmt"
 
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
 )
 
@@ -42,4 +43,15 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		frontierPopulation--
 		frontierPopulation += frontier.expandFromNode(nodes, d, expandFrom)
 	}
+}
+
+// Copy returns a duplicate of DijkstraGraph
+func (d *DijkstraGraph) Copy() *DijkstraGraph {
+	dijkstraCopy := make(DijkstraGraph)
+
+	for k, v := range *d {
+		dijkstraCopy[k] = v
+	}
+
+	return &dijkstraCopy
 }

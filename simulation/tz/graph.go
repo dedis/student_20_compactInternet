@@ -5,8 +5,7 @@ import (
 	"math"
 	"math/rand"
 
-	"dedis.epfl.ch/shell"
-
+	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
 )
 
@@ -33,6 +32,11 @@ func InitGraph() Graph {
 		Witnesses: make(map[int]*DijkstraGraph),
 		Bunches:   make(Clusters),
 	}
+}
+
+// GetNodes returns a pointer to the map of Nodes
+func (g *Graph) GetNodes() *map[int]*Node {
+	return &g.Nodes
 }
 
 func unsupportedOperation(callee string) {
@@ -75,6 +79,20 @@ func (g *Graph) ElectLandmarks() {
 	g.Landmarks[g.K] = nil
 }
 
+// Copy returns a duplicate of Landmarks
+func (l *Landmarks) Copy() *Landmarks {
+	copyLandmarks := make(Landmarks)
+
+	for r, ld := range *l {
+		copyLandmarks[r] = make(map[*Node]bool)
+		for n := range ld {
+			copyLandmarks[r][n] = true
+		}
+	}
+
+	return &copyLandmarks
+}
+
 func (g *Graph) calculateWitnessForRound(round int) *DijkstraGraph {
 	dijkstraGraph := make(DijkstraGraph)
 
@@ -104,8 +122,8 @@ func (g *Graph) calculateWitnessForRound(round int) *DijkstraGraph {
 	return &dijkstraGraph
 }
 
-// Evolve preprocesses the graph
-func (g *Graph) Evolve() {
+// Preprocess fills the data needed to answer queries
+func (g *Graph) Preprocess() {
 
 	g.kIsValid()
 
@@ -230,13 +248,46 @@ func (g *Graph) ApproximatePath(from int, to int) (int64, []int) {
 		from = temp
 		w = (*g.Witnesses[i])[from].parent.Asn
 
-		sh.Overwrite(fmt.Sprintf("Using level %s%d%s landmarks: from:%d, to:%d, neighbor:%d\n", shell.Red, i, shell.Clear, from, to, w))
+		//sh.Overwrite(fmt.Sprintf("Using level %s%d%s landmarks: from:%d, to:%d, neighbor:%d\n", shell.Red, i, shell.Clear, from, to, w))
 	}
+}
+
+// Copy returns a duplicate of the Graph
+func (g *Graph) Copy() AbstractGraph {
+	// TODO: Think about that. Up to now there is no need to copy anything
+	copyGraph := Graph{
+		Nodes:     make(map[int]*Node),
+		K:         g.K,
+		Landmarks: nil,
+		Witnesses: make(map[int]*DijkstraGraph),
+		Bunches:   make(Clusters),
+	}
+
+	for k, v := range g.Nodes {
+		copyGraph.Nodes[k] = v
+	}
+
+	copyGraph.Landmarks = *g.Landmarks.Copy()
+
+	for w, v := range g.Witnesses {
+		copyGraph.Witnesses[w] = v.Copy()
+	}
+
+	copyGraph.Bunches = *g.Bunches.Copy()
+
+	return &copyGraph
+}
+
+// Evolve brings the graph to a stable state
+func (g *Graph) Evolve() int {
+	// TODO: Here too, unsupportedOperation
+	return 0
 }
 
 // SetDestinations updates the speakers according to the set of chosen destinations
 func (g *Graph) SetDestinations(dest map[int]bool) {
-	unsupportedOperation("SetDestinations")
+	// TODO: This is called by default by auditor
+	//unsupportedOperation("SetDestinations")
 }
 
 // GetRoute returns a path (if it exists) from an origin to a destination along with the types of links used
