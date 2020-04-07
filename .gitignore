@@ -1,0 +1,7 @@
+__pycache__/*
+.ipynb_checkpoints/*
+plfit/
+plgen/
+simulation/.vscode/
+simulation/test/*
+simulation/tz-standalone/*
