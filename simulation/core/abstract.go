@@ -8,3 +8,8 @@ type AbstractGraph interface {
 	Evolve() int
 	Copy() AbstractGraph
 }
+
+// Serializable represents an object that can be transferred to file
+type Serializable interface {
+	Serialize(index int) [][]string
+}

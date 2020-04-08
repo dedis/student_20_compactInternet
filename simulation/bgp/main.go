@@ -64,6 +64,12 @@ func LoadFromCsv(graph *Graph, filename string) error {
 
 var sh *Shell
 
+// SetupShell initializes the variable sh
+// TODO: Refactor this.
+func SetupShell() {
+	sh = InitShell("$", " ")
+}
+
 var commandParams = map[string]int{"show": 1, "test-link": 2, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 // ExecCommand executes an instruction
@@ -116,8 +122,6 @@ func (g *Graph) ExecCommand() bool {
 
 func main() {
 
-	sh = InitShell("$", " ")
-
 	graph := InitGraph()
 
 	err := LoadFromCsv(&graph, "../../../simulation/202003-full-edges.csv")
@@ -135,7 +139,7 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 	path, types := g.GetRoute(originAsn, destinationAsn)
 
 	if path != nil {
-		fmt.Printf("length (%d): ", len(path))
+		fmt.Printf("length (%d): ", len(path)-1)
 		fmt.Printf("	%d", originAsn)
 
 		for idx, step := range path[1:] {

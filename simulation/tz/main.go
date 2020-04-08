@@ -59,11 +59,6 @@ func LoadFromCsv(graph *Graph, filename string) error {
 
 }
 
-// Serializable represents an object that can be transferred to file
-type Serializable interface {
-	Serialize(index int) [][]string
-}
-
 // WriteWitnessesToCsv stores witnesses to a csv file
 func WriteWitnessesToCsv(filename string, payload *map[int]*DijkstraGraph) {
 
@@ -223,7 +218,7 @@ func Main() {
 
 	rand.Seed(time.Now().UnixNano())
 
-	graph.ElectLandmarks()
+	graph.ElectLandmarks(RandomStrategy)
 
 	// TODO: This calculates witnesses and bunches from scratch (it will become a different command)
 	/*

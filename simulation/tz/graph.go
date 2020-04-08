@@ -2,8 +2,6 @@ package tz
 
 import (
 	"fmt"
-	"math"
-	"math/rand"
 
 	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
@@ -49,34 +47,22 @@ func (g *Graph) kIsValid() {
 	}
 }
 
-// Landmarks models the set of samples A_i (0 <= i < k)
-type Landmarks map[int]map[*Node]bool
-
 // ElectLandmarks chooses the samples A_i (0 <= i < k) of available nodes
-func (g *Graph) ElectLandmarks() {
+func (g *Graph) ElectLandmarks(selectionStrategy int) {
 	if g.K < 1 {
 		panic("The number of landmark sets must be >= 1, got " + u.Str(g.K))
 	}
 
-	// Put all the nodes in A_0
-	g.Landmarks[0] = make(map[*Node]bool)
-	for _, v := range g.Nodes {
-		g.Landmarks[0][v] = true
+	switch selectionStrategy {
+	case RandomStrategy:
+		g.randomStrategy()
+	case SplineStrategy:
+		g.splineStrategy()
+	case HarmonicStrategy:
+		g.harmonicStrategy()
+	case ImmunityStrategy:
+		g.immunityStrategy()
 	}
-
-	var selProbability float64 = math.Pow(float64(len(g.Nodes)), -1/float64(g.K))
-
-	for i := 1; i < g.K; i++ {
-		g.Landmarks[i] = make(map[*Node]bool)
-		for key := range g.Landmarks[i-1] {
-			extraction := rand.Float64()
-			if extraction <= selProbability {
-				g.Landmarks[i][key] = true
-			}
-		}
-	}
-
-	g.Landmarks[g.K] = nil
 }
 
 // Copy returns a duplicate of Landmarks
@@ -306,9 +292,11 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 
 	nodeHops := make([]*Node, 0, len(hops))
 	nodeTypes := make([]int, 0, len(hops)-1)
-	for _, h := range hops {
+	for idx, h := range hops {
 		nodeHops = append(nodeHops, g.Nodes[h])
-		nodeTypes = append(nodeTypes, 100)
+		if idx > 0 {
+			nodeTypes = append(nodeTypes, g.Nodes[hops[idx-1]].GetNeighborType(g.Nodes[h]))
+		}
 	}
 
 	return nodeHops, nodeTypes
