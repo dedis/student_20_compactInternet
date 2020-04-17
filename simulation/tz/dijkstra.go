@@ -21,6 +21,17 @@ func (d *dijkstraNode) String() string {
 	return "<" + u.Str(d.reference) + "= " + u.Str(d.parent.Asn) + "..." + u.Str(d.nextHop.Asn) + "->" + "(" + u.Str64(d.distance) + ")>"
 }
 
+func (d *dijkstraNode) Copy() *dijkstraNode {
+	dijNodeCopy := dijkstraNode{
+		reference: d.reference,
+		distance:  d.distance,
+		parent:    d.parent,
+		nextHop:   d.nextHop,
+	}
+
+	return &dijNodeCopy
+}
+
 // Serialize produces a representation of the DijkstraGraph suitable to be saved to file
 func (d *DijkstraGraph) Serialize(index int) [][]string {
 	rows := make([][]string, 0, len(*d))

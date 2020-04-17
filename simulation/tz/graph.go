@@ -83,10 +83,10 @@ func (g *Graph) calculateWitnessForRound(round int) *DijkstraGraph {
 	dijkstraGraph := make(DijkstraGraph)
 
 	frontier := Frontier{
-		Zones:       make(map[int64]map[*dijkstraNode]bool),
+		Zones:       make(map[int64]map[int]*dijkstraNode),
 		MinDistance: 0,
 	}
-	frontier.Zones[0] = make(map[*dijkstraNode]bool)
+	frontier.Zones[0] = make(map[int]*dijkstraNode)
 
 	var frontierPopulation int = 0
 
@@ -99,7 +99,7 @@ func (g *Graph) calculateWitnessForRound(round int) *DijkstraGraph {
 			nextHop:   entryPoint,
 		}
 		dijkstraGraph[entryPoint.Asn] = &tempNode
-		frontier.Zones[0][&tempNode] = true
+		frontier.Zones[0][tempNode.reference] = &tempNode
 		frontierPopulation++
 	}
 
@@ -136,14 +136,7 @@ func (g *Graph) Preprocess() {
 		clusters.calculateClustersForRound(&g.Nodes, i, &g.Landmarks, g.Witnesses[i+1])
 		g.Witnesses[i] = g.calculateWitnessForRound(i)
 
-		// Enforce Asterisk rule
-		for asn := range *g.Witnesses[i] {
-			prevDijkstraNode, exists := (*g.Witnesses[i+1])[asn]
-			if exists && (*g.Witnesses[i])[asn].distance == prevDijkstraNode.distance {
-				(*g.Witnesses[i])[asn].parent = prevDijkstraNode.parent
-				(*g.Witnesses[i])[asn].nextHop = prevDijkstraNode.nextHop
-			}
-		}
+		g.enforceAsteriskRule(i)
 	}
 
 	for asn := range g.Nodes {
@@ -153,6 +146,17 @@ func (g *Graph) Preprocess() {
 			if cl, ok := clusters[q][asn]; ok {
 				g.Bunches[asn][q] = cl
 			}
+		}
+	}
+}
+
+// Enforce Asterisk rule (same witness if same distance)
+func (g *Graph) enforceAsteriskRule(round int) {
+	for asn := range *g.Witnesses[round] {
+		prevDijkstraNode, exists := (*g.Witnesses[round+1])[asn]
+		if exists && (*g.Witnesses[round])[asn].distance == prevDijkstraNode.distance {
+			(*g.Witnesses[round])[asn].parent = prevDijkstraNode.parent
+			(*g.Witnesses[round])[asn].nextHop = prevDijkstraNode.nextHop
 		}
 	}
 }
@@ -262,6 +266,231 @@ func (g *Graph) Copy() AbstractGraph {
 	copyGraph.Bunches = *g.Bunches.Copy()
 
 	return &copyGraph
+}
+
+// RemoveEdge deletes an edge from the graph and update the
+// relevant data structures
+// returns true if the deletion was successful
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
+
+	a, aOk := g.Nodes[aAsn]
+	b, bOk := g.Nodes[bAsn]
+
+	if !(aOk && bOk) {
+		return false
+	}
+
+	if len(a.Links) <= 1 && len(b.Links) <= 1 {
+		return false
+	}
+
+	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
+		panic("Link deletion unsuccessful! Corrupted graph")
+	}
+
+	// TODO: Here, take into account the messages sent all the way back
+	// to the landmarks (??)
+
+	fmt.Println("\tWITNESS BEFORE CRASH @ ROUND 2")
+	fmt.Println(g.Witnesses[2])
+
+	// Fix Witnesses
+	for round := g.K - 1; round >= 0; round-- {
+		g.fixWitnessByRound(a, b, round)
+		g.fixWitnessByRound(b, a, round)
+		fmt.Println("\tWITNESSES ROUND " + u.Str(round))
+		fmt.Println(g.Witnesses[round])
+
+		// Enforce asterisk rule only when witnesses are coherent
+		g.enforceAsteriskRule(round)
+	}
+
+	fmt.Println("Witnesses")
+	fmt.Println(g.Witnesses)
+
+	fmt.Println("BUNCHES before FIXING")
+	for n := range g.Nodes {
+		fmt.Print("NODE #" + u.Str(n) + " ")
+		fmt.Println(g.Bunches[n])
+	}
+
+	g.fixBunches(a, b)
+
+	fmt.Println("BUNCHES after FIRST PASS")
+	for n := range g.Nodes {
+		fmt.Print("NODE #" + u.Str(n) + " ")
+		fmt.Println(g.Bunches[n])
+	}
+
+	g.fixBunches(b, a)
+
+	fmt.Println("BUNCHES after FIXING")
+	for n := range g.Nodes {
+		fmt.Print("NODE #" + u.Str(n) + " ")
+		fmt.Println(g.Bunches[n])
+	}
+
+	return true
+}
+
+// Remove from the bunch of 'target' the set of routes to 'unavailable' passing through 'nextHop'
+// returns the set of invalidated destinations
+// TODO: Reduce scope of argument + generalize function to multiple level of landmarks
+func (g *Graph) purgeFromBunch(targetAsn int, unavailable map[int]*Node, nextHopAsn int) map[int]*Node {
+	toInvalidate := make(map[int]*Node)
+
+	// Collect destinations to invalidate
+	for e, d := range g.Bunches[targetAsn] {
+		if d.nextHop.Asn == nextHopAsn {
+			if _, isUnreachable := unavailable[e]; isUnreachable {
+				toInvalidate[e] = g.Nodes[e]
+			}
+		}
+	}
+
+	// Update the bunch
+	for e := range toInvalidate {
+		delete(g.Bunches[targetAsn], e)
+	}
+
+	return toInvalidate
+}
+
+func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
+
+	unavailable := make(map[int]*Node)
+
+	// Fill unavailable
+	for dest, dij := range g.Bunches[endpoint.Asn] {
+		if dij.nextHop.Asn == brokenLink.Asn {
+			unavailable[dest] = g.Nodes[dest]
+		}
+	}
+
+	brokenTopLevel := g.Landmarks.filterByLevel(unavailable, g.K-1)
+
+	dijkstraByLandmark := make(map[int]*DijkstraGraph)
+	frontierByLandmark := make(map[int]*Frontier)
+	populationByLandmark := make(map[int]int)
+	toUpdateByLandmark := make(map[int]*map[int]*Node)
+	for tl := range brokenTopLevel {
+		frontierByLandmark[tl] = &Frontier{
+			Zones:       make(map[int64]map[int]*dijkstraNode),
+			MinDistance: int64Max,
+		}
+		populationByLandmark[tl] = 0
+
+		tempGraph := make(DijkstraGraph)
+		dijkstraByLandmark[tl] = &tempGraph
+
+		tempUpdate := make(map[int]*Node)
+		tempUpdate[endpoint.Asn] = endpoint
+		toUpdateByLandmark[tl] = &tempUpdate
+	}
+
+	// For each asn, addedInRound stores the invalidated destinations
+	addedInRound := make(map[int]map[int]*Node)
+	addedInRound[endpoint.Asn] = unavailable
+
+	g.purgeFromBunch(endpoint.Asn, unavailable, brokenLink.Asn)
+
+	for len(addedInRound) > 0 {
+		nextAdded := make(map[int]map[int]*Node)
+		for a, deletedFromA := range addedInRound {
+			for _, n := range g.Nodes[a].Links {
+				// fmt.Println("Before purge of " + u.Str(n))
+				// fmt.Println(g.Bunches[n])
+				revokedDests := g.purgeFromBunch(n, deletedFromA, a)
+				// fmt.Println("After purge of " + u.Str(n))
+				// fmt.Println(g.Bunches[n])
+
+				// Check if some destinations were revoked
+				if len(revokedDests) > 0 {
+					nextAdded[n] = revokedDests
+				}
+
+				neededAtN := g.Landmarks.filterByLevel(revokedDests, g.K-1)
+				for toUp := range neededAtN {
+					(*toUpdateByLandmark[toUp])[n] = g.Nodes[n]
+				}
+
+				// Check if some of the missing top-level landmarks are found
+				topLevelNeeded := g.Landmarks.filterByLevel(deletedFromA, g.K-1)
+				for tl := range topLevelNeeded {
+					if _, isPresent := g.Bunches[n][tl]; isPresent {
+						// Node n has a valid path to tl
+						tempDij := g.Bunches[n][tl].Copy()
+						(*dijkstraByLandmark[tl])[n] = tempDij
+						if frontierByLandmark[tl].addToFrontier(tempDij) {
+							populationByLandmark[tl]++
+						}
+						(*toUpdateByLandmark[tl])[n] = g.Nodes[n]
+					}
+				}
+			}
+		}
+		addedInRound = nextAdded
+	}
+
+	fmt.Println(frontierByLandmark[6])
+
+	// Execute Dijkstra for each top-level landmark
+	for tl := range brokenTopLevel {
+		dijkstraByLandmark[tl].runDijkstra(toUpdateByLandmark[tl], frontierByLandmark[tl], populationByLandmark[tl])
+
+		for nd, toLandmark := range *dijkstraByLandmark[tl] {
+			g.Bunches[nd][toLandmark.parent.Asn] = toLandmark
+		}
+	}
+}
+
+func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) {
+
+	// Check if the witness was reached through the broken link
+	if (*g.Witnesses[round])[endpoint.Asn].nextHop.Asn != brokenLink.Asn {
+		return
+	}
+
+	toUpdateZone := make(map[int]*Node)
+	toUpdateZone[endpoint.Asn] = endpoint
+	(*g.Witnesses[round])[endpoint.Asn].distance = int64Max
+
+	var addedInRound map[int]bool
+	addedInRound = make(map[int]bool)
+
+	addedInRound[endpoint.Asn] = true
+
+	frontier := Frontier{
+		Zones:       make(map[int64]map[int]*dijkstraNode),
+		MinDistance: int64Max,
+	}
+
+	frontierPopulation := 0
+
+	// Find the Nodes that must be updated
+	for len(addedInRound) > 0 {
+		nextAdded := make(map[int]bool)
+		for a := range addedInRound {
+			for _, n := range g.Nodes[a].Links {
+				toUpdateZone[n] = g.Nodes[n]
+				witness := (*g.Witnesses[round])[n]
+				if witness.nextHop.Asn == a {
+					nextAdded[n] = true
+					(*g.Witnesses[round])[n].distance = int64Max
+				} else if witness.distance < int64Max {
+					dijNode := (*g.Witnesses[round])[n]
+
+					// The node could already be in the frontier
+					if frontier.addToFrontier(dijNode) {
+						frontierPopulation++
+					}
+				}
+			}
+		}
+		addedInRound = nextAdded
+	}
+
+	g.Witnesses[round].runDijkstra(&toUpdateZone, &frontier, frontierPopulation)
 }
 
 // Evolve brings the graph to a stable state

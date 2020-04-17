@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"strings"
 
 	"dedis.epfl.ch/u"
@@ -84,17 +85,48 @@ func (n *Node) GetNeighborType(neighborNode *Node) int {
 	return n.Type[linkIndex]
 }
 
-func (l *Link) search(target int) int {
+// GetNeighborIndex returns the index of the neighbor in the list or -1 (if it's absent)
+func (n *Node) GetNeighborIndex(neighborNode *Node) int {
+	return n.Links.searchOrDefault(neighborNode.Asn)
+}
+
+// DeleteLink removes an edge (if it exists) and that does not disconnect the node
+// from the rest of the graph. In that case it returns false
+func (n *Node) DeleteLink(neighborNode *Node) bool {
+	idx := n.GetNeighborIndex(neighborNode)
+	if idx < 0 {
+		panic(fmt.Sprintf("The link between %d and %d does not exist", n.Asn, neighborNode.Asn))
+	}
+
+	linksNum := len(n.Links)
+
+	if linksNum > 1 {
+		// Delete from links
+		n.Links[idx] = n.Links[linksNum-1]
+		n.Links[linksNum-1] = 0
+		n.Links = n.Links[:linksNum-1]
+
+		//Delete from types
+		n.Type[idx] = n.Type[linksNum-1]
+		n.Type[linksNum-1] = 0
+		n.Type = n.Type[:linksNum-1]
+		return true
+	} else {
+		return false
+	}
+}
+
+func (l *Link) searchOrDefault(target int) int {
 	slice := (*l)[:]
 
 	var global int = 0
 
 	for {
 		if len(slice) == 0 {
-			panic("Element " + u.Str(target) + " not found in " + (*l)[:].String())
+			return -1
 		}
 		if len(slice) == 1 && slice[0] != target {
-			panic("Element " + u.Str(target) + " not found in " + (*l)[:].String())
+			return -1
 		}
 
 		cursor := len(slice) / 2
@@ -108,5 +140,13 @@ func (l *Link) search(target int) int {
 		case x > target:
 			slice = slice[:cursor]
 		}
+	}
+}
+
+func (l *Link) search(target int) int {
+	if idx := l.searchOrDefault(target); idx == -1 {
+		panic("Element " + u.Str(target) + " not found in " + (*l)[:].String())
+	} else {
+		return idx
 	}
 }

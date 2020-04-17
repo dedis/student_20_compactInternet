@@ -23,6 +23,20 @@ const (
 	ImmunityStrategy = 3
 )
 
+// Filter some nodes to find the landmarks of a certain level
+func (l *Landmarks) filterByLevel(candidates map[int]*Node, level int) map[int]*Node {
+
+	candidatesInLevel := make(map[int]*Node)
+
+	for _, cand := range candidates {
+		if _, isInLevel := (*l)[level][cand]; isInLevel {
+			candidatesInLevel[cand.Asn] = cand
+		}
+	}
+
+	return candidatesInLevel
+}
+
 func (g *Graph) randomStrategy() {
 	// Put all the nodes in A_0
 	g.Landmarks[0] = make(map[*Node]bool)

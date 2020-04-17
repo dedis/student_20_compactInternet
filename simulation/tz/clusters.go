@@ -38,10 +38,10 @@ func (c *Clusters) calculateClustersForRound(nodes *map[int]*Node, k int, l *Lan
 			wClusterGraph[w.Asn] = &source
 
 			clusterFrontier := Frontier{
-				Zones:       make(map[int64]map[*dijkstraNode]bool),
+				Zones:       make(map[int64]map[int]*dijkstraNode),
 				MinDistance: 0,
 			}
-			clusterFrontier.Zones[0] = map[*dijkstraNode]bool{&source: true}
+			clusterFrontier.Zones[0] = map[int]*dijkstraNode{source.reference: &source}
 
 			wClusterGraph.runDijkstra(nodes, &clusterFrontier, 1)
 

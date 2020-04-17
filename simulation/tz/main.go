@@ -145,9 +145,9 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 		}
 
 		g.Bunches[bunchOf][u.Int(row[1])] = &dijkstraNode{
-			reference: u.Int(row[1]),
+			reference: bunchOf,
 			distance:  u.Int64(row[2]),
-			parent:    nil, // TODO: Change structure in the future
+			parent:    g.Nodes[u.Int(row[1])],
 			nextHop:   g.Nodes[u.Int(row[3])],
 		}
 	}
