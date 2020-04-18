@@ -59,14 +59,29 @@ func LoadFromCsv(graph *Graph, filename string) error {
 
 }
 
+// WriteLandmarksToCsv stores landmarks to a csv file
+// TODO: Could use WriteToCsv
+func WriteLandmarksToCsv(filename string, payload *Landmarks) {
+
+	csvFile, err := os.Create(filename)
+	if err != nil {
+		panic("Unable to open Landmarks file")
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+	writer.WriteAll(payload.Serialize(0))
+}
+
 // WriteWitnessesToCsv stores witnesses to a csv file
+// TODO: Consider that level-0 landmarks are implicitly known
 func WriteWitnessesToCsv(filename string, payload *map[int]*DijkstraGraph) {
 
 	csvFile, err := os.Create(filename)
-	defer csvFile.Close()
 	if err != nil {
-		panic("Unable to open the file")
+		panic("Unable to open Witnesses file")
 	}
+	defer csvFile.Close()
 
 	writer := csv.NewWriter(csvFile)
 	for index := range *payload {
@@ -78,10 +93,10 @@ func WriteWitnessesToCsv(filename string, payload *map[int]*DijkstraGraph) {
 func WriteToCsv(filename string, payload *map[int]Serializable) {
 
 	csvFile, err := os.Create(filename)
-	defer csvFile.Close()
 	if err != nil {
 		panic("Unable to open the file")
 	}
+	defer csvFile.Close()
 
 	writer := csv.NewWriter(csvFile)
 	for index := range *payload {
@@ -89,18 +104,44 @@ func WriteToCsv(filename string, payload *map[int]Serializable) {
 	}
 }
 
+// LoadLandmarksFromCsv retrieves landmarks a csv file
+func (g *Graph) LoadLandmarksFromCsv(filename string) {
+	csvFile, err := os.Open(filename)
+	if err != nil {
+		panic("Could not open witness file")
+	}
+	defer csvFile.Close()
+
+	reader := csv.NewReader(csvFile)
+
+	for lvl := 0; lvl <= g.K; lvl++ {
+		g.Landmarks[lvl] = make(map[*Node]bool)
+	}
+
+	for {
+		row, err := reader.Read()
+		if err == io.EOF {
+			// Done
+			break
+		}
+
+		g.Landmarks[u.Int(row[0])][g.Nodes[u.Int(row[1])]] = true
+	}
+}
+
+// LoadWitnessesFromCsv retrieves witnesses from a csv file
 func (g *Graph) LoadWitnessesFromCsv(filename string) {
 	csvFile, err := os.Open(filename)
 	if err != nil {
 		panic("Could not open witness file")
 	}
+	defer csvFile.Close()
 
 	reader := csv.NewReader(csvFile)
 
 	var currRound int = -1
 
 	for i := 0; ; i++ {
-
 		row, err := reader.Read()
 		if err == io.EOF {
 			// Done
@@ -119,7 +160,6 @@ func (g *Graph) LoadWitnessesFromCsv(filename string) {
 			parent:    g.Nodes[u.Int(row[3])],
 			nextHop:   g.Nodes[u.Int(row[4])],
 		}
-
 	}
 }
 
@@ -129,6 +169,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 	if err != nil {
 		panic("Could not open witness file")
 	}
+	defer csvFile.Close()
 
 	reader := csv.NewReader(csvFile)
 
@@ -153,7 +194,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 	}
 }
 
-var commandParams = map[string]int{"route": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"route": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 var sh *Shell
 
@@ -183,6 +224,9 @@ func (g *Graph) ExecCommand() bool {
 	switch cmd[0] {
 	case "route":
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
+
+	case "delete":
+		g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "help":
 		fmt.Println("The available commands are:")

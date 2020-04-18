@@ -101,15 +101,19 @@ func (n *Node) DeleteLink(neighborNode *Node) bool {
 	linksNum := len(n.Links)
 
 	if linksNum > 1 {
+		for c := idx; c < linksNum-1; c++ {
+			n.Links[c] = n.Links[c+1]
+			n.Type[c] = n.Type[c+1]
+		}
+
 		// Delete from links
-		n.Links[idx] = n.Links[linksNum-1]
 		n.Links[linksNum-1] = 0
 		n.Links = n.Links[:linksNum-1]
 
 		//Delete from types
-		n.Type[idx] = n.Type[linksNum-1]
 		n.Type[linksNum-1] = 0
 		n.Type = n.Type[:linksNum-1]
+
 		return true
 	} else {
 		return false

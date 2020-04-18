@@ -1,49 +1,79 @@
 package main
 
 import (
-	tz "dedis.epfl.ch/tz"
+	"fmt"
+	"math/rand"
+	"time"
+
+	"dedis.epfl.ch/audit"
+	"dedis.epfl.ch/bgp"
+	"dedis.epfl.ch/tz"
+	"dedis.epfl.ch/u"
 
 	. "dedis.epfl.ch/core"
 )
 
-func main() {
-
+func restoreTZ(folder string, datasetName string, k int, landmarkStrategy int) tz.Graph {
 	tzGraph := tz.InitGraph()
-	tzGraph.K = 3
+	tzGraph.K = k
 
-	tz.LoadFromCsv(&tzGraph, "./data/test.csv")
+	tz.LoadFromCsv(&tzGraph, folder+datasetName+".csv")
 
-	tzGraph.Landmarks[0] = map[*Node]bool{
-		tzGraph.Nodes[1]: true,
-		tzGraph.Nodes[2]: true,
-		tzGraph.Nodes[3]: true,
-		tzGraph.Nodes[4]: true,
-		tzGraph.Nodes[5]: true,
-		tzGraph.Nodes[6]: true,
-		tzGraph.Nodes[7]: true,
-	}
-	tzGraph.Landmarks[1] = map[*Node]bool{
-		tzGraph.Nodes[4]: true,
-		tzGraph.Nodes[6]: true,
-		tzGraph.Nodes[7]: true,
-	}
-	tzGraph.Landmarks[2] = map[*Node]bool{
-		tzGraph.Nodes[6]: true,
-	}
-	tzGraph.Landmarks[3] = map[*Node]bool{}
+	tzGraph.LoadLandmarksFromCsv(folder + datasetName + "-witnesses-" + u.Str(landmarkStrategy) + ".csv")
+	tzGraph.LoadWitnessesFromCsv(folder + datasetName + "-witnesses-" + u.Str(landmarkStrategy) + ".csv")
+	tzGraph.LoadBunchesFromCsv(folder + datasetName + "-bunches-" + u.Str(landmarkStrategy) + ".csv")
+
+	return tzGraph
+}
+
+// folder must end with a slash
+func loadAndProcessTZ(folder string, datasetName string, k int, landmarkStrategy int) tz.Graph {
+	tzGraph := tz.InitGraph()
+	tzGraph.K = k
+
+	tz.LoadFromCsv(&tzGraph, folder+datasetName+".csv")
+
+	rand.Seed(time.Now().UnixNano())
+
+	tzGraph.ElectLandmarks(landmarkStrategy)
 
 	tzGraph.Preprocess()
 
-	tzGraph.PrintRoute(5, 4)
+	tz.WriteLandmarksToCsv(folder+datasetName+"-landmarks-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Landmarks)
+	tz.WriteWitnessesToCsv(folder+datasetName+"-witnesses-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Witnesses)
+	tz.WriteToCsv(folder+datasetName+"-bunches-"+u.Str(landmarkStrategy)+".csv", &map[int]Serializable{0: &tzGraph.Bunches})
 
-	tzGraph.RemoveEdge(4, 3)
+	return tzGraph
+}
 
-	tzGraph.PrintRoute(5, 4)
+func main() {
 
-	tzGraph.RemoveEdge(5, 1)
+	tzGraph := restoreTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy)
+	//loadAndProcessTZ("./data/", "202003-full-edges", 3, tz.RandomStrategy)
 
-	tzGraph.PrintRoute(5, 4)
+	bgpGraph := bgp.InitGraph()
 
+	bgp.LoadFromCsv(&bgpGraph, "./data/202003-full-edges.csv")
+
+	avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &tzGraph, 4, 50)
+	// Measure stretch
+	fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
+
+	tz.SetupShell()
+	bgp.SetupShell()
+
+	for bgpGraph.ExecCommand() {
+	}
+
+	/*
+		tzGraph.PrintRoute(5, 4)
+
+		tzGraph.RemoveEdge(3, 4)
+		tzGraph.PrintRoute(5, 4)
+
+		tzGraph.RemoveEdge(5, 1)
+		tzGraph.PrintRoute(5, 4)
+	*/
 	/*
 		IDEAS:
 		  - If lower level landmark receives top-level update messages, it also broadcast its presence

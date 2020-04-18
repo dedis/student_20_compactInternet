@@ -16,6 +16,20 @@ import (
 // Landmarks models the set of samples A_i (0 <= i < k)
 type Landmarks map[int]map[*Node]bool
 
+// Serialize produces a representation of Landmarks suitable to be saved to file
+func (f *Landmarks) Serialize(index int) [][]string {
+
+	content := make([][]string, 0, len(*f))
+
+	for level := 0; level < len(*f); level++ {
+		for ld := range (*f)[level] {
+			content = append(content, []string{u.Str(level), u.Str(ld.Asn)})
+		}
+	}
+
+	return content
+}
+
 const (
 	RandomStrategy   = 0
 	SplineStrategy   = 1

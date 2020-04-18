@@ -183,6 +183,8 @@ func (g *Graph) expandPath(a int, w int, b int, round int) []int {
 		hopsBtoW = append(hopsBtoW, b)
 	}
 
+	hopsAtoW, hopsBtoW = trimPrefix(hopsAtoW, hopsBtoW)
+
 	// Choose which part to reverse according to the round parity
 	var radix *[]int
 	var toReverse *[]int
@@ -291,44 +293,17 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
 	// TODO: Here, take into account the messages sent all the way back
 	// to the landmarks (??)
 
-	fmt.Println("\tWITNESS BEFORE CRASH @ ROUND 2")
-	fmt.Println(g.Witnesses[2])
-
 	// Fix Witnesses
 	for round := g.K - 1; round >= 0; round-- {
 		g.fixWitnessByRound(a, b, round)
 		g.fixWitnessByRound(b, a, round)
-		fmt.Println("\tWITNESSES ROUND " + u.Str(round))
-		fmt.Println(g.Witnesses[round])
 
 		// Enforce asterisk rule only when witnesses are coherent
 		g.enforceAsteriskRule(round)
 	}
 
-	fmt.Println("Witnesses")
-	fmt.Println(g.Witnesses)
-
-	fmt.Println("BUNCHES before FIXING")
-	for n := range g.Nodes {
-		fmt.Print("NODE #" + u.Str(n) + " ")
-		fmt.Println(g.Bunches[n])
-	}
-
 	g.fixBunches(a, b)
-
-	fmt.Println("BUNCHES after FIRST PASS")
-	for n := range g.Nodes {
-		fmt.Print("NODE #" + u.Str(n) + " ")
-		fmt.Println(g.Bunches[n])
-	}
-
 	g.fixBunches(b, a)
-
-	fmt.Println("BUNCHES after FIXING")
-	for n := range g.Nodes {
-		fmt.Print("NODE #" + u.Str(n) + " ")
-		fmt.Println(g.Bunches[n])
-	}
 
 	return true
 }
@@ -398,11 +373,7 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
 		nextAdded := make(map[int]map[int]*Node)
 		for a, deletedFromA := range addedInRound {
 			for _, n := range g.Nodes[a].Links {
-				// fmt.Println("Before purge of " + u.Str(n))
-				// fmt.Println(g.Bunches[n])
 				revokedDests := g.purgeFromBunch(n, deletedFromA, a)
-				// fmt.Println("After purge of " + u.Str(n))
-				// fmt.Println(g.Bunches[n])
 
 				// Check if some destinations were revoked
 				if len(revokedDests) > 0 {
@@ -431,8 +402,6 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
 		}
 		addedInRound = nextAdded
 	}
-
-	fmt.Println(frontierByLandmark[6])
 
 	// Execute Dijkstra for each top-level landmark
 	for tl := range brokenTopLevel {

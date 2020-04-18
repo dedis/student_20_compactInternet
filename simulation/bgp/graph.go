@@ -42,6 +42,13 @@ func (g *Graph) SetDestinations(dest map[int]bool) {
 	}
 }
 
+// DeleteDestination removes the destination from every speaker
+func (g *Graph) DeleteDestination(dest int) {
+	for n := range g.Nodes {
+		g.Speakers[n].deleteRoute(g.Nodes[dest])
+	}
+}
+
 func (g *Graph) setUnstable(node *Node) {
 	_, pr := g.unstable[node]
 	if !pr {
@@ -137,6 +144,26 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 
 	// Add destination AS node
 	return append(route, g.Nodes[destinationAsn]), linkTypes
+}
+
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
+
+	a, aOk := g.Nodes[aAsn]
+	b, bOk := g.Nodes[bAsn]
+
+	if !(aOk && bOk) {
+		return false
+	}
+
+	if len(a.Links) <= 1 && len(b.Links) <= 1 {
+		return false
+	}
+
+	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
+		panic("Link deletion unsuccessful! Corrupted graph")
+	}
+
+	return true
 }
 
 func (g *Graph) printSpeakerStatus(asn int) {

@@ -70,6 +70,32 @@ func (s *Speaker) hasRoute(dest *Node) int {
 	return -1
 }
 
+func (s *Speaker) deleteRoute(dest *Node) bool {
+	idx := s.hasRoute(dest)
+	if idx == -1 {
+		return false
+	}
+
+	lastIdx := len(s.Destinations) - 1
+
+	s.Destinations[idx] = s.Destinations[lastIdx]
+	s.Fresh[idx] = s.Fresh[lastIdx]
+	s.NextHop[idx] = s.NextHop[lastIdx]
+	s.Length[idx] = s.Length[lastIdx]
+
+	s.Destinations[lastIdx] = nil
+	s.Fresh[lastIdx] = false
+	s.NextHop[lastIdx] = nil
+	s.Length[lastIdx] = -1
+
+	s.Destinations = s.Destinations[:lastIdx]
+	s.Fresh = s.Fresh[:lastIdx]
+	s.NextHop = s.NextHop[:lastIdx]
+	s.Length = s.Length[:lastIdx]
+
+	return true
+}
+
 func (s *Speaker) heardFrom(destIndex int, neighbor *Node) bool {
 	return s.NextHop[destIndex].Asn == neighbor.Asn
 }

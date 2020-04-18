@@ -70,7 +70,7 @@ func SetupShell() {
 	sh = InitShell("$", " ")
 }
 
-var commandParams = map[string]int{"show": 1, "test-link": 2, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"show": 1, "test-link": 2, "add-route": 1, "delete-route": 1, "evolve": 0, "delete": 2, "route": 2, "help": 0, "exit": 0}
 
 // ExecCommand executes an instruction
 func (g *Graph) ExecCommand() bool {
@@ -100,9 +100,15 @@ func (g *Graph) ExecCommand() bool {
 	case "add-route":
 		g.SetDestinations(map[int]bool{u.Int(cmd[1]): true})
 
+	case "delete-route":
+		g.DeleteDestination(u.Int(cmd[1]))
+
 	case "evolve":
 		convergenceSteps := g.Evolve()
 		fmt.Printf("Equilibrium reached, %d messages exchanged on the network\n", convergenceSteps)
+
+	case "delete":
+		g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "route":
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
