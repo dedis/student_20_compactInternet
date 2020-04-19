@@ -270,20 +270,36 @@ func (g *Graph) Copy() AbstractGraph {
 	return &copyGraph
 }
 
+// Performs the union of two sets
+func union(acculator map[int]bool, toAdd map[int]bool) map[int]bool {
+	if acculator == nil {
+		panic("Cannot perform union on nil accumulator")
+	}
+	if toAdd != nil {
+		for e := range toAdd {
+			acculator[e] = true
+		}
+	}
+	return acculator
+}
+
 // RemoveEdge deletes an edge from the graph and update the
 // relevant data structures
 // returns true if the deletion was successful
-func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
+// returns the number of nodes impacted by the update
+// (false, 0) : the deletion could not be performed
+// (false, >0): the deletion was performed but the graph is NO MORE 1 connected component
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 
 	a, aOk := g.Nodes[aAsn]
 	b, bOk := g.Nodes[bAsn]
 
 	if !(aOk && bOk) {
-		return false
+		return false, 0
 	}
 
-	if len(a.Links) <= 1 && len(b.Links) <= 1 {
-		return false
+	if len(a.Links) <= 1 || len(b.Links) <= 1 {
+		return false, 0
 	}
 
 	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
@@ -293,19 +309,34 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
 	// TODO: Here, take into account the messages sent all the way back
 	// to the landmarks (??)
 
+	impactedArea := make(map[int]bool)
+
 	// Fix Witnesses
 	for round := g.K - 1; round >= 0; round-- {
-		g.fixWitnessByRound(a, b, round)
-		g.fixWitnessByRound(b, a, round)
+		fixWitFromA := g.fixWitnessByRound(a, b, round)
+		fixWitFromB := g.fixWitnessByRound(b, a, round)
+
+		impactedArea = union(impactedArea, fixWitFromA)
+		impactedArea = union(impactedArea, fixWitFromB)
 
 		// Enforce asterisk rule only when witnesses are coherent
 		g.enforceAsteriskRule(round)
 	}
 
-	g.fixBunches(a, b)
-	g.fixBunches(b, a)
+	fixBunFromA := g.fixBunches(a, b)
+	fixBunFromB := g.fixBunches(b, a)
 
-	return true
+	impactedArea = union(impactedArea, fixBunFromA)
+	impactedArea = union(impactedArea, fixBunFromB)
+
+	// Check that the graph is still connected
+	for ia := range impactedArea {
+		if len(g.Bunches[ia]) < len(g.Landmarks[g.K-1]) {
+			return false, len(impactedArea)
+		}
+	}
+
+	return true, len(impactedArea)
 }
 
 // Remove from the bunch of 'target' the set of routes to 'unavailable' passing through 'nextHop'
@@ -331,7 +362,9 @@ func (g *Graph) purgeFromBunch(targetAsn int, unavailable map[int]*Node, nextHop
 	return toInvalidate
 }
 
-func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
+// fixBunches restores the correctness of bunches
+// returns the set of asn touched by the update
+func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 
 	unavailable := make(map[int]*Node)
 
@@ -403,6 +436,14 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
 		addedInRound = nextAdded
 	}
 
+	// Audit
+	impactedAsn := make(map[int]bool)
+	for tl := range brokenTopLevel {
+		for e := range *toUpdateByLandmark[tl] {
+			impactedAsn[e] = true
+		}
+	}
+
 	// Execute Dijkstra for each top-level landmark
 	for tl := range brokenTopLevel {
 		dijkstraByLandmark[tl].runDijkstra(toUpdateByLandmark[tl], frontierByLandmark[tl], populationByLandmark[tl])
@@ -411,13 +452,17 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) {
 			g.Bunches[nd][toLandmark.parent.Asn] = toLandmark
 		}
 	}
+
+	return impactedAsn
 }
 
-func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) {
+// Restore the correctness of witnesses for a given round
+// return the set of asn needed to complete the operation
+func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) map[int]bool {
 
 	// Check if the witness was reached through the broken link
 	if (*g.Witnesses[round])[endpoint.Asn].nextHop.Asn != brokenLink.Asn {
-		return
+		return nil
 	}
 
 	toUpdateZone := make(map[int]*Node)
@@ -459,7 +504,15 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) {
 		addedInRound = nextAdded
 	}
 
+	// Audit
+	impactedAsn := make(map[int]bool)
+	for asn := range toUpdateZone {
+		impactedAsn[asn] = true
+	}
+
 	g.Witnesses[round].runDijkstra(&toUpdateZone, &frontier, frontierPopulation)
+
+	return impactedAsn
 }
 
 // Evolve brings the graph to a stable state
@@ -472,6 +525,11 @@ func (g *Graph) Evolve() int {
 func (g *Graph) SetDestinations(dest map[int]bool) {
 	// TODO: This is called by default by auditor
 	//unsupportedOperation("SetDestinations")
+}
+
+func (g *Graph) DeleteDestination(dest int) {
+	// TODO: This is called by default by auditor
+	// unsupportedOperation("DeleteDestination")
 }
 
 // GetRoute returns a path (if it exists) from an origin to a destination along with the types of links used

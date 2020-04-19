@@ -1,9 +1,11 @@
 package audit
 
 import (
+	"encoding/csv"
 	"fmt"
 	"math"
 	"math/rand"
+	"os"
 	"time"
 
 	. "dedis.epfl.ch/core"
@@ -11,7 +13,7 @@ import (
 )
 
 func randomNode(a AbstractGraph) *Node {
-	nodes := (a).GetNodes()
+	nodes := a.GetNodes()
 
 	stop := rand.Int() % len(*nodes)
 
@@ -79,10 +81,19 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 			continue
 		}
 
+		withValleyFlag := 0
 		// TODO: Also consider link types
 		if !respectsNoValley(auditLinks) {
 			localValley++
+			withValleyFlag = 1
 		}
+
+		// TODO: Make that thread safe
+		record(
+			u.Str(len(basePath)-1),
+			u.Str(len(auditPath)-1),
+			u.Str(withValleyFlag),
+		)
 
 		var sampleStretch float64
 		if len(basePath) == 1 {
@@ -104,6 +115,46 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 	channels.stretchContribution <- acc
 	channels.maxContribution <- localMax
 	channels.valleyContribution <- localValley
+
+	stopRecording()
+}
+
+// TODO: Think about refactoring
+type Recorder struct {
+	active bool
+	file   *os.File
+	rec    *csv.Writer
+}
+
+var globalRecorder Recorder = Recorder{
+	active: false,
+	file:   nil,
+	rec:    nil,
+}
+
+func InitRecorder(filename string) {
+	var err error
+	globalRecorder.file, err = os.Create(filename)
+	if err != nil {
+		panic("Could not create the output file for the auditor")
+	}
+
+	globalRecorder.rec = csv.NewWriter(globalRecorder.file)
+	globalRecorder.active = true
+}
+
+func record(payload ...string) {
+	if globalRecorder.active {
+		globalRecorder.rec.Write(payload)
+	}
+}
+
+func stopRecording() {
+	if globalRecorder.active {
+		globalRecorder.rec.Flush()
+		defer globalRecorder.file.Close()
+		globalRecorder.active = false
+	}
 }
 
 // MeasureStretch measures the average path stretch over random paths
@@ -139,4 +190,145 @@ func MeasureStretch(baseline AbstractGraph, audited AbstractGraph, rounds int, b
 	fmt.Printf("%f%% of paths do not respec the no-valley rule\n", float64(valley)/float64(rounds*batches)*100)
 
 	return stretch / float64(rounds*batches), max
+}
+
+// MeasureEdgeDeletionImpact measures the number of nodes that must be updated when a random link fails
+// batches: 	 number of random link deletions
+// returns (averageImpact, maxImpact)
+func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, batches int) (float64, float64) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	var averageImpact float64
+	var maxImpact float64
+
+	for b := 0; b < batches; {
+
+		// Choose a random node (with more than 1 link)
+		endpoint := randomNode(audited)
+		for len(endpoint.Links) < 2 {
+			endpoint = randomNode(audited)
+		}
+
+		linksNum := len(endpoint.Links)
+
+		// Choose a random link among the possible ones
+		linkIdx := rand.Int() % linksNum
+		otherAsn := endpoint.Links[linkIdx]
+
+		success, impactedNodes := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		if success {
+			// Consider the sample only if it's successful
+			b++
+			averageImpact += float64(impactedNodes)
+			maxImpact = math.Max(maxImpact, float64(impactedNodes))
+
+			otherEndpoint := (*audited.GetNodes())[otherAsn]
+
+			record(
+				u.Str(endpoint.Asn),
+				u.Str(otherAsn),
+				u.Str(len(endpoint.Links)+1),
+				u.Str(len(otherEndpoint.Links)+1),
+				u.Str(impactedNodes),
+			)
+		}
+	}
+
+	averageImpact /= float64(batches)
+
+	stopRecording()
+
+	return averageImpact, maxImpact
+}
+
+func MeasureDeletionStretch(baseline AbstractGraph, audited AbstractGraph, batches int) (float64, float64) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	var averageStretchIncrease float64
+	var maxStretchIncrease float64
+
+	b := 0
+	for b < batches {
+
+		// Choose a random node (with more than 1 link)
+		endpoint := randomNode(audited)
+		for len(endpoint.Links) < 2 {
+			endpoint = randomNode(audited)
+		}
+
+		linksNum := len(endpoint.Links)
+
+		// Choose a random link among the possible ones
+		linkIdx := rand.Int() % linksNum
+		otherAsn := endpoint.Links[linkIdx]
+
+		// TODO: Could process many destinations at a time
+
+		// Measure path lengths before deletion
+		baseline.SetDestinations(map[int]bool{otherAsn: true})
+		baseline.Evolve()
+		baselineBefore, _ := baseline.GetRoute(endpoint.Asn, otherAsn)
+
+		// TODO: Should call evolve, ... even on audited
+		auditedBefore, _ := audited.GetRoute(endpoint.Asn, otherAsn)
+
+		baseline.DeleteDestination(otherAsn)
+		baseline.Evolve()
+		audited.DeleteDestination(otherAsn)
+		audited.Evolve()
+
+		baselineSuccess, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
+		success, impactedNum := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		if success {
+			// Consider the sample only if it's successful
+			b++
+
+			if !baselineSuccess {
+				panic("Difference in graphs")
+			}
+
+			baseline.SetDestinations(map[int]bool{otherAsn: true})
+			baseline.Evolve()
+			// TODO: Should do the same with audited
+
+			baselineAfter, _ := baseline.GetRoute(endpoint.Asn, otherAsn)
+			auditedAfter, _ := audited.GetRoute(endpoint.Asn, otherAsn)
+
+			if baselineAfter == nil {
+				panic("No no-valley path after deletion")
+			}
+
+			sampleIncrease := (float64(len(auditedAfter)) / float64(len(baselineAfter))) / (float64(len(auditedBefore)) / float64(len(baselineBefore)))
+
+			averageStretchIncrease += sampleIncrease
+			maxStretchIncrease = math.Max(maxStretchIncrease, sampleIncrease)
+
+			/*
+				fmt.Printf("BL before: %s		AD before: %s\n", baselineBefore, auditedBefore)
+				fmt.Printf("BL after : %s		AD after : %s\n", baselineAfter, auditedAfter)
+			*/
+
+			record(
+				u.Str(len(baselineBefore)),
+				u.Str(len(auditedBefore)),
+				u.Str(len(baselineAfter)),
+				u.Str(len(auditedAfter)),
+			)
+		} else if !success && impactedNum > 0 {
+			// The graph is no more a connected component
+			// Must conclude the test (TODO: Make it restart from fresh graph)
+			fmt.Printf("Test aborted after %d samples: detected >1 connected component\n", b)
+			break
+		}
+	}
+
+	averageStretchIncrease /= float64(b)
+
+	stopRecording()
+
+	return averageStretchIncrease, maxStretchIncrease
 }

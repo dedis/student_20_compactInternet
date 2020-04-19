@@ -45,9 +45,9 @@ func LoadFromCsv(graph *Graph, filename string) error {
 				graph.Nodes[currAsn] = &tempNode
 			}
 			currAsn = u.Int(row[0])
-			currLinks = currLinks[:0]
+			currLinks = []int{}
 			currLinks = append(currLinks, u.Int(row[1]))
-			currTypes = currTypes[:0]
+			currTypes = []int{}
 			currTypes = append(currTypes, u.Int(row[2]))
 		} else {
 			currLinks = append(currLinks, u.Int(row[1]))
@@ -192,6 +192,13 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 			nextHop:   g.Nodes[u.Int(row[3])],
 		}
 	}
+
+	// TODO: Debug check
+	for k, bc := range g.Bunches {
+		if len(bc) < len(g.Landmarks[g.K-1]) {
+			panic("Node " + u.Str(k) + "was not loaded correctly")
+		}
+	}
 }
 
 var commandParams = map[string]int{"route": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
@@ -226,7 +233,8 @@ func (g *Graph) ExecCommand() bool {
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "delete":
-		g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
+		_, asnUpdated := g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
+		fmt.Printf("Graph updated, %d nodes exchanged updates\n", asnUpdated)
 
 	case "help":
 		fmt.Println("The available commands are:")

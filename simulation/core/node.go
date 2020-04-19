@@ -108,11 +108,11 @@ func (n *Node) DeleteLink(neighborNode *Node) bool {
 
 		// Delete from links
 		n.Links[linksNum-1] = 0
-		n.Links = n.Links[:linksNum-1]
+		n.Links = n.Links[:(linksNum - 1)]
 
 		//Delete from types
 		n.Type[linksNum-1] = 0
-		n.Type = n.Type[:linksNum-1]
+		n.Type = n.Type[:(linksNum - 1)]
 
 		return true
 	} else {

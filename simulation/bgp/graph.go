@@ -146,24 +146,25 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 	return append(route, g.Nodes[destinationAsn]), linkTypes
 }
 
-func (g *Graph) RemoveEdge(aAsn int, bAsn int) bool {
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 
 	a, aOk := g.Nodes[aAsn]
 	b, bOk := g.Nodes[bAsn]
 
 	if !(aOk && bOk) {
-		return false
+		return false, 0
 	}
 
-	if len(a.Links) <= 1 && len(b.Links) <= 1 {
-		return false
+	if len(a.Links) <= 1 || len(b.Links) <= 1 {
+		return false, 0
 	}
 
 	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
 		panic("Link deletion unsuccessful! Corrupted graph")
 	}
 
-	return true
+	// TODO: Modify this
+	return true, 0
 }
 
 func (g *Graph) printSpeakerStatus(asn int) {
