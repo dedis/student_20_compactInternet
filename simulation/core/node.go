@@ -154,3 +154,17 @@ func (l *Link) search(target int) int {
 		return idx
 	}
 }
+
+// Copy returns a new Graph
+func (n *Node) Copy() *Node {
+	copyNode := Node{
+		Asn:   n.Asn,
+		Links: make(Link, len(n.Links)),
+		Type:  make(Rel, len(n.Type)),
+	}
+
+	copy(copyNode.Links, n.Links)
+	copy(copyNode.Type, n.Type)
+
+	return &copyNode
+}

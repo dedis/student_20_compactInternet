@@ -21,12 +21,12 @@ func (d *dijkstraNode) String() string {
 	return "<" + u.Str(d.reference) + "= " + u.Str(d.parent.Asn) + "..." + u.Str(d.nextHop.Asn) + "->" + "(" + u.Str64(d.distance) + ")>"
 }
 
-func (d *dijkstraNode) Copy() *dijkstraNode {
+func (d *dijkstraNode) Copy(nodes *map[int]*Node) *dijkstraNode {
 	dijNodeCopy := dijkstraNode{
 		reference: d.reference,
 		distance:  d.distance,
-		parent:    d.parent,
-		nextHop:   d.nextHop,
+		parent:    (*nodes)[d.parent.Asn],
+		nextHop:   (*nodes)[d.nextHop.Asn],
 	}
 
 	return &dijNodeCopy
@@ -57,11 +57,11 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 }
 
 // Copy returns a duplicate of DijkstraGraph
-func (d *DijkstraGraph) Copy() *DijkstraGraph {
+func (d *DijkstraGraph) Copy(nodes *map[int]*Node) *DijkstraGraph {
 	dijkstraCopy := make(DijkstraGraph)
 
 	for k, v := range *d {
-		dijkstraCopy[k] = v
+		dijkstraCopy[k] = v.Copy(nodes)
 	}
 
 	return &dijkstraCopy

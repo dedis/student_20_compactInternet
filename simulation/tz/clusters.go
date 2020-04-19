@@ -57,13 +57,13 @@ func (c *Clusters) calculateClustersForRound(nodes *map[int]*Node, k int, l *Lan
 }
 
 // Copy returns a duplicate of Clusters
-func (c *Clusters) Copy() *Clusters {
+func (c *Clusters) Copy(nodes *map[int]*Node) *Clusters {
 	clusterCopy := make(Clusters)
 
 	for k, cl := range *c {
 		clusterCopy[k] = make(map[int]*dijkstraNode)
 		for ci, dn := range cl {
-			clusterCopy[k][ci] = dn
+			clusterCopy[k][ci] = dn.Copy(nodes)
 		}
 	}
 

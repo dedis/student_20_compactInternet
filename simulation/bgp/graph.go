@@ -178,7 +178,7 @@ func (g *Graph) printSpeakerStatus(asn int) {
 	}
 }
 
-// Copy returns a (partially) new Graph
+// Copy returns a new Graph
 func (g *Graph) Copy() AbstractGraph {
 	// TODO: Think if deeper copy is needed
 	copyGraph := Graph{
@@ -189,7 +189,7 @@ func (g *Graph) Copy() AbstractGraph {
 	}
 
 	for k, v := range g.Nodes {
-		copyGraph.Nodes[k] = v
+		copyGraph.Nodes[k] = v.Copy()
 	}
 
 	// Deep copy of Speakers
@@ -198,7 +198,7 @@ func (g *Graph) Copy() AbstractGraph {
 	}
 
 	for k := range g.unstable {
-		copyGraph.unstable[k] = true
+		copyGraph.unstable[copyGraph.Nodes[k.Asn]] = true
 	}
 
 	return &copyGraph

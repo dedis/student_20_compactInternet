@@ -55,19 +55,19 @@ func main() {
 
 	bgp.LoadFromCsv(&bgpGraph, "./data/202003-full-edges.csv")
 
-	//audit.InitRecorder("./data/full-stretch-20000.csv")
-	//avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &tzGraph, 1, 20000)
 	// Measure stretch
-	//fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
+	audit.InitRecorder("./data/full-stretch-2000.csv")
+	avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &tzGraph, 4, 500)
+	fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
 	// audit.InitRecorder("./data/full-impact-2000.csv")
 	// avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &tzGraph, 40)
 	// fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
-
-	audit.InitRecorder("./data/full-deletion-stretch-3000.csv")
-	avgDelStretch, maxDelStretch := audit.MeasureDeletionStretch(&bgpGraph, &tzGraph, 3000)
-	fmt.Printf("Average stretch increase: %f 	Max stretch increase: %f\n", avgDelStretch, maxDelStretch)
-
+	/*
+		audit.InitRecorder("./data/full-deletion-stretch-3000.csv")
+		avgDelStretch, maxDelStretch := audit.MeasureDeletionStretch(&bgpGraph, &tzGraph, 3000)
+		fmt.Printf("Average stretch increase: %f 	Max stretch increase: %f\n", avgDelStretch, maxDelStretch)
+	*/
 	/* if err := exec.Command("cmd", "/C", "shutdown", "/s").Run(); err != nil {
 		fmt.Println("Failed to initiate shutdown:", err)
 	} */

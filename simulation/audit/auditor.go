@@ -1,11 +1,9 @@
 package audit
 
 import (
-	"encoding/csv"
 	"fmt"
 	"math"
 	"math/rand"
-	"os"
 	"time"
 
 	. "dedis.epfl.ch/core"
@@ -88,7 +86,6 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 			withValleyFlag = 1
 		}
 
-		// TODO: Make that thread safe
 		record(
 			u.Str(len(basePath)-1),
 			u.Str(len(auditPath)-1),
@@ -115,46 +112,6 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 	channels.stretchContribution <- acc
 	channels.maxContribution <- localMax
 	channels.valleyContribution <- localValley
-
-	stopRecording()
-}
-
-// TODO: Think about refactoring
-type Recorder struct {
-	active bool
-	file   *os.File
-	rec    *csv.Writer
-}
-
-var globalRecorder Recorder = Recorder{
-	active: false,
-	file:   nil,
-	rec:    nil,
-}
-
-func InitRecorder(filename string) {
-	var err error
-	globalRecorder.file, err = os.Create(filename)
-	if err != nil {
-		panic("Could not create the output file for the auditor")
-	}
-
-	globalRecorder.rec = csv.NewWriter(globalRecorder.file)
-	globalRecorder.active = true
-}
-
-func record(payload ...string) {
-	if globalRecorder.active {
-		globalRecorder.rec.Write(payload)
-	}
-}
-
-func stopRecording() {
-	if globalRecorder.active {
-		globalRecorder.rec.Flush()
-		defer globalRecorder.file.Close()
-		globalRecorder.active = false
-	}
 }
 
 // MeasureStretch measures the average path stretch over random paths
@@ -188,6 +145,8 @@ func MeasureStretch(baseline AbstractGraph, audited AbstractGraph, rounds int, b
 	}
 
 	fmt.Printf("%f%% of paths do not respec the no-valley rule\n", float64(valley)/float64(rounds*batches)*100)
+
+	stopRecording()
 
 	return stretch / float64(rounds*batches), max
 }
@@ -243,9 +202,13 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 	return averageImpact, maxImpact
 }
 
-func MeasureDeletionStretch(baseline AbstractGraph, audited AbstractGraph, batches int) (float64, float64) {
+func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal AbstractGraph, batches int) (float64, float64) {
 
 	rand.Seed(time.Now().UnixNano())
+
+	// Conduct measurements on a copy of the graphs
+	baseline := baselineOriginal.Copy()
+	audited := auditedOriginal.Copy()
 
 	var averageStretchIncrease float64
 	var maxStretchIncrease float64
@@ -284,9 +247,6 @@ func MeasureDeletionStretch(baseline AbstractGraph, audited AbstractGraph, batch
 		success, impactedNum := audited.RemoveEdge(endpoint.Asn, otherAsn)
 
 		if success {
-			// Consider the sample only if it's successful
-			b++
-
 			if !baselineSuccess {
 				panic("Difference in graphs")
 			}
@@ -299,8 +259,12 @@ func MeasureDeletionStretch(baseline AbstractGraph, audited AbstractGraph, batch
 			auditedAfter, _ := audited.GetRoute(endpoint.Asn, otherAsn)
 
 			if baselineAfter == nil {
-				panic("No no-valley path after deletion")
+				// After the deletion, there is no path respecting GR rules in the original graph (only paths with valleys)
+				continue
 			}
+
+			// Consider the sample only if it's successful
+			b++
 
 			sampleIncrease := (float64(len(auditedAfter)) / float64(len(baselineAfter))) / (float64(len(auditedBefore)) / float64(len(baselineBefore)))
 
@@ -319,10 +283,11 @@ func MeasureDeletionStretch(baseline AbstractGraph, audited AbstractGraph, batch
 				u.Str(len(auditedAfter)),
 			)
 		} else if !success && impactedNum > 0 {
-			// The graph is no more a connected component
-			// Must conclude the test (TODO: Make it restart from fresh graph)
-			fmt.Printf("Test aborted after %d samples: detected >1 connected component\n", b)
-			break
+			// Game over! The graph is no more a connected component
+			// Start with fresh copies
+			fmt.Printf("Starting from fresh graphs after %d samples (detected > 1 connected component)\n", b)
+			baseline = baselineOriginal.Copy()
+			audited = auditedOriginal.Copy()
 		}
 	}
 

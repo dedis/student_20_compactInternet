@@ -66,13 +66,13 @@ func (g *Graph) ElectLandmarks(selectionStrategy int) {
 }
 
 // Copy returns a duplicate of Landmarks
-func (l *Landmarks) Copy() *Landmarks {
+func (l *Landmarks) Copy(nodes *map[int]*Node) *Landmarks {
 	copyLandmarks := make(Landmarks)
 
 	for r, ld := range *l {
 		copyLandmarks[r] = make(map[*Node]bool)
 		for n := range ld {
-			copyLandmarks[r][n] = true
+			copyLandmarks[r][(*nodes)[n.Asn]] = true
 		}
 	}
 
@@ -256,16 +256,16 @@ func (g *Graph) Copy() AbstractGraph {
 	}
 
 	for k, v := range g.Nodes {
-		copyGraph.Nodes[k] = v
+		copyGraph.Nodes[k] = v.Copy()
 	}
 
-	copyGraph.Landmarks = *g.Landmarks.Copy()
+	copyGraph.Landmarks = *g.Landmarks.Copy(&copyGraph.Nodes)
 
 	for w, v := range g.Witnesses {
-		copyGraph.Witnesses[w] = v.Copy()
+		copyGraph.Witnesses[w] = v.Copy(&copyGraph.Nodes)
 	}
 
-	copyGraph.Bunches = *g.Bunches.Copy()
+	copyGraph.Bunches = *g.Bunches.Copy(&copyGraph.Nodes)
 
 	return &copyGraph
 }
@@ -423,7 +423,7 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 				for tl := range topLevelNeeded {
 					if _, isPresent := g.Bunches[n][tl]; isPresent {
 						// Node n has a valid path to tl
-						tempDij := g.Bunches[n][tl].Copy()
+						tempDij := g.Bunches[n][tl].Copy(&g.Nodes)
 						(*dijkstraByLandmark[tl])[n] = tempDij
 						if frontierByLandmark[tl].addToFrontier(tempDij) {
 							populationByLandmark[tl]++
