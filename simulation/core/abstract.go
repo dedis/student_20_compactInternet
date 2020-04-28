@@ -4,6 +4,7 @@ package core
 type AbstractGraph interface {
 	GetRoute(a int, b int) ([]*Node, []int)
 	GetNodes() *map[int]*Node
+	CountLinks() int
 	DeleteDestination(dest int)
 	SetDestinations(dest map[int]bool)
 	Evolve() int

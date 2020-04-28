@@ -29,6 +29,17 @@ func (g *Graph) GetNodes() *map[int]*Node {
 	return &g.Nodes
 }
 
+// CountLinks returns the total number of links found in the graph
+func (g *Graph) CountLinks() int {
+	counter := 0
+
+	for _, n := range g.Nodes {
+		counter += len(n.Links)
+	}
+
+	return counter / 2
+}
+
 // SetDestinations updates the speakers according to the set of chosen destinations
 func (g *Graph) SetDestinations(dest map[int]bool) {
 	for asn := range dest {

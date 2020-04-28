@@ -25,6 +25,26 @@ func randomNode(a AbstractGraph) *Node {
 	return nil
 }
 
+// randomLink returns a randomly chosen link
+// with the form of one of its endpoints and the index of the link to the other endpoint
+func randomLink(a AbstractGraph, linksNum int) (*Node, int) {
+	nodes := a.GetNodes()
+
+	// Must be doubled, since each edge appears twice
+	linksNum *= 2
+
+	stop := rand.Int() % linksNum
+
+	for _, n := range *nodes {
+		stop -= len(n.Links)
+		if stop <= 0 {
+			return n, len(n.Links) + stop - 1
+		}
+	}
+
+	return nil, -1
+}
+
 // Check for a lax version of Gao-Rexford rules
 func respectsNoValley(routeLinks []int) bool {
 	goneDown := false
@@ -49,6 +69,7 @@ type roundChannels struct {
 func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, channels roundChannels) {
 	origs := make([]int, 0, batches)
 	dests := make([]int, 0, batches)
+
 	for b := 0; b < batches; b++ {
 		// Choose endpoints (baseline.Nodes == audited.Nodes)
 		origs = append(origs, randomNode(baseline).Asn)
@@ -61,8 +82,8 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 	}
 
 	// Evolve graphs (if needed)
-	(baseline).Evolve()
-	(audited).Evolve()
+	baseline.Evolve()
+	audited.Evolve()
 
 	var acc float64
 	var localMax float64
@@ -105,8 +126,14 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 			localMax = sampleStretch
 		}
 
-		fmt.Printf("\tRoute %d	from %d to %d	obtained %d vs %d	stretch %f\n", b, origs[b], dests[b], len(auditPath)-1, len(basePath)-1, sampleStretch)
+		// fmt.Printf("\tRoute %d	from %d to %d	obtained %d vs %d	stretch %f\n", b, origs[b], dests[b], len(auditPath)-1, len(basePath)-1, sampleStretch)
 		acc += sampleStretch
+	}
+
+	// Delete destinations
+	for _, d := range dests {
+		baseline.DeleteDestination(d)
+		audited.DeleteDestination(d)
 	}
 
 	channels.stretchContribution <- acc
@@ -161,21 +188,21 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 	var averageImpact float64
 	var maxImpact float64
 
+	linksNum := audited.CountLinks()
+
 	for b := 0; b < batches; {
 
-		// Choose a random node (with more than 1 link)
-		endpoint := randomNode(audited)
+		// Choose a random link (from a node with more than 1 link)
+		endpoint, linkIdx := randomLink(audited, linksNum)
 		for len(endpoint.Links) < 2 {
-			endpoint = randomNode(audited)
+			endpoint, linkIdx = randomLink(audited, linksNum)
 		}
 
-		linksNum := len(endpoint.Links)
-
-		// Choose a random link among the possible ones
-		linkIdx := rand.Int() % linksNum
 		otherAsn := endpoint.Links[linkIdx]
 
+		// Delete link from the graph
 		success, impactedNodes := audited.RemoveEdge(endpoint.Asn, otherAsn)
+		linksNum--
 
 		if success {
 			// Consider the sample only if it's successful
@@ -202,6 +229,8 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 	return averageImpact, maxImpact
 }
 
+// MeasureDeletionStretch computes the relative increase in stretch after link deletion
+// the ONLY considered routes are the one between 2 neighboring nodes (in the original graph)
 func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal AbstractGraph, batches int) (float64, float64) {
 
 	rand.Seed(time.Now().UnixNano())
@@ -213,19 +242,17 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 	var averageStretchIncrease float64
 	var maxStretchIncrease float64
 
+	linksNum := audited.CountLinks()
+
 	b := 0
 	for b < batches {
 
-		// Choose a random node (with more than 1 link)
-		endpoint := randomNode(audited)
-		for len(endpoint.Links) < 2 {
-			endpoint = randomNode(audited)
+		// Choose a random link (with endpoint with more than 1 link)
+		endpoint, linkIdx := randomLink(audited, linksNum)
+		for len(endpoint.Links) < 2 || len((*audited.GetNodes())[endpoint.Links[linkIdx]].Links) < 2 {
+			endpoint, linkIdx = randomLink(audited, linksNum)
 		}
 
-		linksNum := len(endpoint.Links)
-
-		// Choose a random link among the possible ones
-		linkIdx := rand.Int() % linksNum
 		otherAsn := endpoint.Links[linkIdx]
 
 		// TODO: Could process many destinations at a time
@@ -235,8 +262,10 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 		baseline.Evolve()
 		baselineBefore, _ := baseline.GetRoute(endpoint.Asn, otherAsn)
 
-		// TODO: Should call evolve, ... even on audited
+		audited.SetDestinations(map[int]bool{otherAsn: true})
+		audited.Evolve()
 		auditedBefore, _ := audited.GetRoute(endpoint.Asn, otherAsn)
+		linksNum--
 
 		baseline.DeleteDestination(otherAsn)
 		baseline.Evolve()
@@ -271,11 +300,6 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 			averageStretchIncrease += sampleIncrease
 			maxStretchIncrease = math.Max(maxStretchIncrease, sampleIncrease)
 
-			/*
-				fmt.Printf("BL before: %s		AD before: %s\n", baselineBefore, auditedBefore)
-				fmt.Printf("BL after : %s		AD after : %s\n", baselineAfter, auditedAfter)
-			*/
-
 			record(
 				u.Str(len(baselineBefore)),
 				u.Str(len(auditedBefore)),
@@ -288,10 +312,127 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 			fmt.Printf("Starting from fresh graphs after %d samples (detected > 1 connected component)\n", b)
 			baseline = baselineOriginal.Copy()
 			audited = auditedOriginal.Copy()
+
+			// Recount links
+			linksNum = audited.CountLinks()
 		}
 	}
 
 	averageStretchIncrease /= float64(b)
+
+	stopRecording()
+
+	return averageStretchIncrease, maxStretchIncrease
+}
+
+func performDeletionsRound(baseline AbstractGraph, audited AbstractGraph, round int, deletionProportion float64) bool {
+
+	linksNum := audited.CountLinks()
+
+	toDelete := int(float64(linksNum) * deletionProportion)
+
+	fmt.Printf("Starting round #%d: deleting %d links\n", round, toDelete)
+
+	for toDelete > 0 {
+		// Choose a random link
+		endpoint, linkIdx := randomLink(audited, linksNum)
+		otherAsn := endpoint.Links[linkIdx]
+		// Here, 8 links are required at both endpoints to perform a link deletion
+		for len(endpoint.Links) < 8 || len((*audited.GetNodes())[otherAsn].Links) < 8 {
+			endpoint, linkIdx = randomLink(audited, linksNum)
+			otherAsn = endpoint.Links[linkIdx]
+		}
+
+		baselineSuccess, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
+		auditedSuccess, impactedNum := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		if auditedSuccess {
+			if !baselineSuccess {
+				panic("Baseline and Audited graphs out of sync")
+			}
+
+			toDelete--
+			linksNum--
+
+			/*
+				record(
+					u.Str(round),
+					u.Str(len(endpoint.Links)+1),
+					u.Str(len((*audited.GetNodes())[otherAsn].Links)),
+				)
+			*/
+
+		} else if !auditedSuccess && impactedNum > 0 {
+			// Multiple connected components detected
+			return false
+		} else {
+			// Something strange happened
+			panic("Could not perform a legitimate deletion")
+		}
+
+	}
+
+	return true
+}
+
+func MeasureRandomDeletionsStretch(baselineOriginal AbstractGraph, auditedOriginal AbstractGraph, rounds int, deletionProportion float64) (float64, float64) {
+
+	rand.Seed(time.Now().UnixNano())
+
+	// Conduct measurements on a copy of the graphs
+	baseline := baselineOriginal.Copy()
+	audited := auditedOriginal.Copy()
+
+	var previousStretch float64
+	var averageStretchIncrease float64
+	var maxStretchIncrease float64
+
+	perRoundSamples := 1200
+
+	for r := 0; r < rounds; r++ {
+
+		// TODO: Hnadle this better
+		// Mark the beginning of a round
+		record(
+			u.Str(-r),
+			u.Str(-r),
+			u.Str(-r),
+		)
+
+		// Measure stretch
+		stretchChannel := roundChannels{
+			stretchContribution: make(chan float64, rounds),
+			maxContribution:     make(chan float64, rounds),
+			valleyContribution:  make(chan int, rounds),
+		}
+
+		go stretchRound(baseline, audited, perRoundSamples, stretchChannel)
+
+		roundStretch := <-stretchChannel.stretchContribution / float64(perRoundSamples)
+		roundStretchIncrease := roundStretch - previousStretch
+		previousStretch = roundStretch
+
+		averageStretchIncrease += roundStretchIncrease
+		if roundStretchIncrease > maxStretchIncrease {
+			maxStretchIncrease = roundStretchIncrease
+		}
+
+		fmt.Printf("	Measured %f increase in round stretch\n", roundStretchIncrease)
+
+		if r != rounds-1 {
+			safeBaselineCopy := baseline.Copy()
+			safeAuditedCopy := audited.Copy()
+
+			for !performDeletionsRound(baseline, audited, r, deletionProportion) {
+				// Try again
+				fmt.Println("Obtained 2 connected components, retrying from safe copy ...")
+				baseline = safeBaselineCopy.Copy()
+				audited = safeAuditedCopy.Copy()
+			}
+		}
+	}
+
+	averageStretchIncrease /= float64(rounds)
 
 	stopRecording()
 

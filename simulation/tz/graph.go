@@ -37,6 +37,17 @@ func (g *Graph) GetNodes() *map[int]*Node {
 	return &g.Nodes
 }
 
+// CountLinks returns the number of links in the graph
+func (g *Graph) CountLinks() int {
+	counter := 0
+
+	for _, n := range g.Nodes {
+		counter += len(n.Links)
+	}
+
+	return counter / 2
+}
+
 func unsupportedOperation(callee string) {
 	panic(callee + "() is not supported by TZ algorithm")
 }
