@@ -52,8 +52,42 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 	for frontierPopulation > 0 {
 		expandFrom := frontier.getFromClosest()
 		frontierPopulation--
-		frontierPopulation += frontier.expandFromNode(nodes, d, expandFrom)
+		frontierPopulation += frontier.expandFromNode(nodes, d, expandFrom, false)
+		// TODO: Remove it, when frontierPopulation is integrated in Frontier struct
+		frontier.checkFrontierConsistency(frontierPopulation)
 	}
+
+	// Discover non GR-reachable nodes and run vanilla Dijkstra
+	// TODO: Maybe refactor
+	notCoveredNodes := 0
+	nonGRneighborood := make(map[int]*Node)
+	for asn, nd := range *nodes {
+		if _, reached := (*d)[asn]; !reached {
+			nonGRneighborood[asn] = (*nodes)[asn]
+			for _, l := range nd.Links {
+				nonGRneighborood[l] = (*nodes)[l]
+				// If it is reachable, add to frontier
+				if _, isReachable := (*d)[l]; isReachable {
+					if frontier.addToFrontier((*d)[l]) {
+						frontierPopulation++
+					}
+				}
+			}
+			notCoveredNodes++
+		}
+	}
+	fmt.Println(notCoveredNodes)
+
+	frontier.checkFrontierConsistency(frontierPopulation)
+
+	for frontierPopulation > 0 {
+		expandFrom := frontier.getFromClosest()
+		frontierPopulation--
+		frontierPopulation += frontier.expandFromNode(&nonGRneighborood, d, expandFrom, true)
+		frontier.checkFrontierConsistency(frontierPopulation)
+	}
+
+	notCoveredNodes++
 }
 
 // Copy returns a duplicate of DijkstraGraph

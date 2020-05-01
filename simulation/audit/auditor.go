@@ -77,8 +77,8 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 		dests = append(dests, dest.Asn)
 
 		// Only destinations must be declared
-		(baseline).SetDestinations(map[int]bool{dest.Asn: true})
-		(audited).SetDestinations(map[int]bool{dest.Asn: true})
+		baseline.SetDestinations(map[int]bool{dest.Asn: true})
+		audited.SetDestinations(map[int]bool{dest.Asn: true})
 	}
 
 	// Evolve graphs (if needed)
@@ -96,12 +96,12 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 
 		if basePath == nil || auditPath == nil {
 			// TODO: Insert useful reaction
-			fmt.Println("Unable to compare routes from " + u.Str(origs[b]) + " to " + u.Str(dests[b]))
+			// println disabled to clean tmux logs
+			//fmt.Println("Unable to compare routes from " + u.Str(origs[b]) + " to " + u.Str(dests[b]))
 			continue
 		}
 
 		withValleyFlag := 0
-		// TODO: Also consider link types
 		if !respectsNoValley(auditLinks) {
 			localValley++
 			withValleyFlag = 1
@@ -375,19 +375,23 @@ func performDeletionsRound(baseline AbstractGraph, audited AbstractGraph, round 
 	return true
 }
 
-func MeasureRandomDeletionsStretch(baselineOriginal AbstractGraph, auditedOriginal AbstractGraph, rounds int, deletionProportion float64) (float64, float64) {
+// MeasureRandomDeletionsStretch computes the average and maximum increase in empirical stretch after having deleted
+// a fraction 'deletionProportion' of edges from the graph (without creating multiple connected components)
+// this operation is repeated ('rounds' - 1) times
+// If recording is active, for each round, the lengths and shapes of measured paths are saved to file
+func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOriginal *AbstractGraph, rounds int, deletionProportion float64) (float64, float64) {
 
 	rand.Seed(time.Now().UnixNano())
 
 	// Conduct measurements on a copy of the graphs
-	baseline := baselineOriginal.Copy()
-	audited := auditedOriginal.Copy()
+	baseline := (*baselineOriginal).Copy()
+	audited := (*auditedOriginal).Copy()
 
 	var previousStretch float64
 	var averageStretchIncrease float64
 	var maxStretchIncrease float64
 
-	perRoundSamples := 1200
+	perRoundSamples := 10
 
 	for r := 0; r < rounds; r++ {
 
@@ -432,9 +436,17 @@ func MeasureRandomDeletionsStretch(baselineOriginal AbstractGraph, auditedOrigin
 		}
 	}
 
+	isRecording, logPath := GetOutputDir()
+	if isRecording {
+		GraphStructure(*audited.GetNodes()).WriteStructureToCsv(fmt.Sprintf("%smissing-edges-%dx%.3f.csv", logPath, rounds, deletionProportion))
+	}
+
 	averageStretchIncrease /= float64(rounds)
 
 	stopRecording()
+
+	(*baselineOriginal) = baseline
+	(*auditedOriginal) = audited
 
 	return averageStretchIncrease, maxStretchIncrease
 }

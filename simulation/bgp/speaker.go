@@ -7,7 +7,7 @@ import (
 	"dedis.epfl.ch/u"
 )
 
-// Speaker represents a (BGP, TZ, ...) speaker
+// Speaker represents a BGP speaker
 type Speaker struct {
 	Fresh        []bool
 	Destinations []*Node

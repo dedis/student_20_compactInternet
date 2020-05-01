@@ -96,21 +96,32 @@ func (g *Graph) Activate(nodeIndex int) int {
 				if !sp.heardFrom(i, g.Nodes[link]) {
 					var flag bool = false
 
+					canTell := false
+
+					if nd.CanTellAbout(sp.NextHop[i], g.Nodes[link]) {
+						canTell = true
+						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						messagesSent++
+					}
+
+					// TODO: Delete when CanTellAbout is tested
 					switch linkType := nd.Type[k]; {
 					// CUSTOMER: Advertise all routes
 					case linkType == ToCustomer:
-						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
-						messagesSent++
+						if !canTell {
+							panic("Wrong GR rules")
+						}
 
-					// PEER: Advertise routes from customers and peers? (TODO?)
+					// PEER: Advertise routes from customers and peers
 					case linkType == ToPeer && (nextHopType == ToCustomer || nextHopType == ToPeer):
-						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
-						messagesSent++
-
+						if !canTell {
+							panic("Wrong GR rules")
+						}
 					// PROVIDER: Advertise routes from customers
 					case linkType == ToProvider && nextHopType == ToCustomer:
-						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
-						messagesSent++
+						if !canTell {
+							panic("Wrong GR rules")
+						}
 					}
 
 					if flag {

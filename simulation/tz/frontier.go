@@ -80,7 +80,7 @@ func (f *Frontier) addToFrontier(n *dijkstraNode) bool {
 	return true
 }
 
-// Removes an element from the frontier
+// Removes an element from the 'MinDistance' zone of the frontier
 // returns false if the element was not present
 func (f *Frontier) deleteFromFrontier(n *dijkstraNode) bool {
 	_, existed := f.Zones[f.MinDistance][n.reference]
@@ -103,42 +103,60 @@ func (f *Frontier) deleteFromFrontier(n *dijkstraNode) bool {
 	return existed
 }
 
-func (f *Frontier) expandFromNode(nodes *map[int]*Node, dijkstraGraph *DijkstraGraph, n *dijkstraNode) int {
+func (f *Frontier) expandFromNode(nodes *map[int]*Node, dijkstraGraph *DijkstraGraph, n *dijkstraNode, notGRcompliant bool) int {
 	var discoveredNodes int = 0
 
-	for _, neighbor := range (*nodes)[n.reference].Links {
+	currNode := (*nodes)[n.reference]
 
-		// Work also on induced subgraphs
-		if _, inSubgraph := (*nodes)[neighbor]; inSubgraph {
-			d, exists := (*dijkstraGraph)[neighbor]
-			updatedDistance := n.distance + edgeWeight
-			if exists {
-				// Relax edge if needed
-				if d.distance > updatedDistance {
-					if f.deleteFromFrontier(d) {
-						discoveredNodes--
+	for _, neighbor := range currNode.Links {
+
+		// Works also on induced subgraphs
+		if neighborNode, inSubgraph := (*nodes)[neighbor]; inSubgraph {
+
+			// TODO: Modify here
+			// Filter announcements using Gao-Rexford rules
+			if notGRcompliant || currNode.CanTellAbout(n.nextHop, neighborNode) {
+				updatedDistance := n.distance + edgeWeight
+				d, exists := (*dijkstraGraph)[neighbor]
+				if exists {
+					// Relax edge if needed
+					if d.distance > updatedDistance {
+						if f.deleteFromFrontier(d) {
+							discoveredNodes--
+						}
+						d.distance = updatedDistance
+						d.parent = n.parent
+						d.nextHop = (*nodes)[n.reference]
+						if f.addToFrontier(d) {
+							discoveredNodes++
+						}
 					}
-					d.distance = updatedDistance
-					d.parent = n.parent
-					d.nextHop = (*nodes)[n.reference]
+				} else {
+					d = &dijkstraNode{
+						reference: neighbor,
+						distance:  updatedDistance,
+						parent:    n.parent,
+						nextHop:   (*nodes)[n.reference],
+					}
+					(*dijkstraGraph)[neighbor] = d
 					if f.addToFrontier(d) {
 						discoveredNodes++
 					}
-				}
-			} else {
-				d = &dijkstraNode{
-					reference: neighbor,
-					distance:  updatedDistance,
-					parent:    n.parent,
-					nextHop:   (*nodes)[n.reference],
-				}
-				(*dijkstraGraph)[neighbor] = d
-				if f.addToFrontier(d) {
-					discoveredNodes++
 				}
 			}
 		}
 	}
 
 	return discoveredNodes
+}
+
+// TODO: Debug method
+func (f *Frontier) checkFrontierConsistency(expectedPopulation int) {
+	for _, zone := range f.Zones {
+		expectedPopulation -= len(zone)
+	}
+
+	if expectedPopulation != 0 {
+		panic("Frontier consistency violated")
+	}
 }

@@ -3,14 +3,20 @@ package audit
 import (
 	"encoding/csv"
 	"os"
+	"strings"
 	"sync"
 )
 
+// TODO: Add support for DOS-like paths
+const pathSeparator = "/"
+
 const maxBufferSize = 50
 
+// Recorder stores test logs in a thread-safe way
 type Recorder struct {
 	mutex      sync.Mutex
 	active     bool
+	folder     string
 	file       *os.File
 	rec        *csv.Writer
 	bufferSize int
@@ -18,12 +24,31 @@ type Recorder struct {
 
 var globalRecorder Recorder = Recorder{
 	active:     false,
+	folder:     "",
 	file:       nil,
 	rec:        nil,
 	bufferSize: 0,
 }
 
+// GetOutputDir returns the path to the directory used to store logs
+// the boolean is true if the path is valid
+func GetOutputDir() (bool, string) {
+	globalRecorder.mutex.Lock()
+	defer globalRecorder.mutex.Unlock()
+
+	if globalRecorder.active {
+		return true, globalRecorder.folder
+	}
+
+	return false, ""
+}
+
+// InitRecorder initializes the globalRecorder
 func InitRecorder(filename string) {
+	path := strings.Split(filename, pathSeparator)
+
+	globalRecorder.folder = strings.Join(path[:len(path)-1], pathSeparator) + pathSeparator
+
 	var err error
 	globalRecorder.file, err = os.Create(filename)
 	if err != nil {

@@ -1,7 +1,9 @@
 package core
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
 	"strings"
 
 	"dedis.epfl.ch/u"
@@ -18,6 +20,9 @@ const ToCustomer int = (-1)
 
 // Link represents and edge in AS graph
 type Link []int
+
+// GraphStructure represents the nodes and edges in AS graph
+type GraphStructure map[int]*Node
 
 func (l Link) String() string {
 	var sb strings.Builder
@@ -77,6 +82,35 @@ func (n Node) String() string {
 	var sb strings.Builder
 	sb.WriteString("AS " + u.Str(n.Asn) + ": (" + u.Str(len(n.Links)) + " links)\n")
 	return sb.String()
+}
+
+// CanTellAbout enforces Gao-Rexford rules, determining if the presence of
+// a link between 'n' and 'subject' can be revealed to 'target'
+func (n *Node) CanTellAbout(subject *Node, target *Node) bool {
+	if n.Asn == subject.Asn {
+		// Can always tell about itself
+		return true
+	}
+
+	heardFromType := n.GetNeighborType(subject)
+	advertisedToType := n.GetNeighborType(target)
+
+	switch {
+	// CUSTOMER: Advertise all routes
+	case advertisedToType == ToCustomer:
+		return true
+
+	// PEER: Advertise routes from customers and peers
+	case advertisedToType == ToPeer:
+		return heardFromType == ToCustomer || heardFromType == ToPeer
+
+	// PROVIDER: Advertise routes from customers
+	case advertisedToType == ToProvider:
+		return heardFromType == ToCustomer
+
+	default:
+		panic("Invalid link type")
+	}
 }
 
 // GetNeighborType returns the type of the link connecting the node to a neighbor
@@ -167,4 +201,29 @@ func (n *Node) Copy() *Node {
 	copy(copyNode.Type, n.Type)
 
 	return &copyNode
+}
+
+// Serialize implements the interface Serializable for *Node
+func (n *Node) Serialize() [][]string {
+	stream := make([][]string, 0, len(n.Links))
+	for idx := 0; idx < len(n.Links); idx++ {
+		stream = append(stream, []string{u.Str(n.Asn), u.Str(n.Links[idx]), u.Str(n.Type[idx])})
+	}
+	return stream
+}
+
+// WriteStructureToCsv saves the graph structure to a CSV files
+func (nodes GraphStructure) WriteStructureToCsv(filename string) {
+	csvFile, err := os.Create(filename)
+	if err != nil {
+		panic("Unable to open the file")
+	}
+	defer csvFile.Close()
+
+	writer := csv.NewWriter(csvFile)
+	for _, n := range nodes {
+		writer.WriteAll(n.Serialize())
+	}
+
+	writer.Flush()
 }

@@ -108,7 +108,7 @@ func WriteToCsv(filename string, payload *map[int]Serializable) {
 func (g *Graph) LoadLandmarksFromCsv(filename string) {
 	csvFile, err := os.Open(filename)
 	if err != nil {
-		panic("Could not open witness file")
+		panic("Could not open landmarks file")
 	}
 	defer csvFile.Close()
 

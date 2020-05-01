@@ -2,6 +2,8 @@ package tz
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
 	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/u"
@@ -63,6 +65,8 @@ func (g *Graph) ElectLandmarks(selectionStrategy int) {
 	if g.K < 1 {
 		panic("The number of landmark sets must be >= 1, got " + u.Str(g.K))
 	}
+
+	rand.Seed(time.Now().UnixNano())
 
 	switch selectionStrategy {
 	case RandomStrategy:
@@ -192,6 +196,15 @@ func (g *Graph) expandPath(a int, w int, b int, round int) []int {
 	hopsBtoW := make([]int, 0, 4)
 	for ; b != w; b = g.Bunches[b][w].nextHop.Asn {
 		hopsBtoW = append(hopsBtoW, b)
+
+		// TODO: Debug check
+		if len(hopsBtoW) > 30 {
+			fmt.Println("--------------!!!!!!!--------------")
+			fmt.Println("Needed to cut b->w path, got")
+			fmt.Println(hopsBtoW)
+			fmt.Println("--------------!!!!!!!--------------")
+			break
+		}
 	}
 
 	hopsAtoW, hopsBtoW = trimPrefix(hopsAtoW, hopsBtoW)

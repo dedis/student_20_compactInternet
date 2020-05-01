@@ -116,7 +116,7 @@ func (g *Graph) ExecCommand() bool {
 	case "help":
 		fmt.Println("The available commands are:")
 		for keyword := range commandParams {
-			fmt.Printf("\t%s\t (%d args)\n", keyword, commandParams[keyword])
+			fmt.Printf("\t%-15s\t (%d args)\n", keyword, commandParams[keyword])
 		}
 
 	case "exit":

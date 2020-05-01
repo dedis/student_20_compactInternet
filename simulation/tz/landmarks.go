@@ -124,10 +124,6 @@ func (g *Graph) splineStrategy() {
 	}
 
 	g.Landmarks[g.K] = nil
-
-	fmt.Println(g.Landmarks[1])
-	fmt.Println(len(g.Landmarks[1]))
-	fmt.Println(len(g.Landmarks[2]))
 }
 
 func (g *Graph) harmonicStrategy() {
@@ -179,10 +175,6 @@ func (g *Graph) harmonicStrategy() {
 	}
 
 	g.Landmarks[g.K] = nil
-
-	fmt.Println(g.Landmarks[1])
-	fmt.Println(len(g.Landmarks[1]))
-	fmt.Println(len(g.Landmarks[2]))
 }
 
 func (g *Graph) immunityStrategy() {
@@ -232,9 +224,4 @@ func (g *Graph) immunityStrategy() {
 	}
 
 	g.Landmarks[g.K] = nil
-
-	fmt.Println(g.Landmarks[1])
-	fmt.Println(len(g.Landmarks[1]))
-	fmt.Println(len(g.Landmarks[2]))
-
 }
