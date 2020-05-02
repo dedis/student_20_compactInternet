@@ -80,20 +80,20 @@ func main() {
 	//tzGraph := restoreTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy)
 	//loadAndProcessTZ("./data/", "202003-full-edges", 3, tz.RandomStrategy)
 
-	grTzGraph := loadAndProcessWithLandmarksTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy, "202003-full-edges-landmarks-2.csv")
+	grTzGraph := restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GR", 3, tz.HarmonicStrategy)
 	//restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GR", 3, tz.HarmonicStrategy)
 	//loadAndProcessWithLandmarksTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy, "202003-full-edges-landmarks-2.csv")
 
 	bgpGraph := bgp.InitGraph()
 	bgp.LoadFromCsv(&bgpGraph, "./data/202003-full-edges.csv")
 
-	// bgpPointer := AbstractGraph(&bgpGraph)
-	// tzPointer := AbstractGraph(&tzGraph)
+	bgpPointer := AbstractGraph(&bgpGraph)
+	grTzPointer := AbstractGraph(&grTzGraph)
 
 	// Measure cumulative effects of deletions over stretch
-	// audit.InitRecorder("./data/cumulative-deletions-12x.05-(4).csv")
-	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &tzPointer, 12, .05)
-	// fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
+	audit.InitRecorder("./data/cumulative-deletions-4x.05.csv")
+	avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 4, .05)
+	fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
 	// refreshedTzGraph := loadAndProcessTZ("./data/", "missing-edges-12x0.050", 3, tz.HarmonicStrategy)
@@ -108,9 +108,9 @@ func main() {
 	// fmt.Printf("Refreshed TZ graph, Average stretch: %f		Maximum stretch: %f\n", avgRefreshedStretch, maxRefreshedStretch)
 
 	// Measure stretch
-	audit.InitRecorder("./data/full-GR-stretch-4000.csv")
-	avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 4, 1000)
-	fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
+	// audit.InitRecorder("./data/full-GR-stretch-4000.csv")
+	// avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 4, 1000)
+	// fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
 	// audit.InitRecorder("./data/full-impact-2000.csv")
 	// avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &tzGraph, 40)
@@ -126,6 +126,10 @@ func main() {
 
 	tz.SetupShell()
 	bgp.SetupShell()
+
+	grTzGraph.PrintRoute(2426, 2200)
+	grTzGraph.RemoveEdge(2426, 2200)
+	grTzGraph.PrintRoute(2426, 2200)
 
 	for grTzGraph.ExecCommand() {
 	}

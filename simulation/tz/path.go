@@ -25,8 +25,11 @@ func max(a int, b int) int {
 	return b
 }
 
-func markAsVisited(traversed map[int]bool, el int) (wasVisited bool) {
-	_, wasVisited = traversed[el]
+func markAsVisited(traversed *map[int]bool, el int) (wasVisited bool) {
+	_, wasVisited = (*traversed)[el]
+	if !wasVisited {
+		(*traversed)[el] = true
+	}
 	return
 }
 
@@ -38,12 +41,12 @@ func trimPrefix(AtoW []int, BtoW []int) ([]int, []int) {
 
 	for i := 0; i < max(awLength, bwLength); i++ {
 		if i < awLength {
-			if markAsVisited(traversed, AtoW[i]) {
+			if markAsVisited(&traversed, AtoW[i]) {
 				return trimPathByRoot(AtoW, BtoW, AtoW[i])
 			}
 		}
 		if i < bwLength {
-			if markAsVisited(traversed, BtoW[i]) {
+			if markAsVisited(&traversed, BtoW[i]) {
 				return trimPathByRoot(AtoW, BtoW, BtoW[i])
 			}
 		}

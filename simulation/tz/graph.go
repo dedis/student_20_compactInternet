@@ -491,7 +491,10 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) m
 
 	toUpdateZone := make(map[int]*Node)
 	toUpdateZone[endpoint.Asn] = endpoint
-	(*g.Witnesses[round])[endpoint.Asn].distance = int64Max
+
+	// Remove the dijkstraNode (instead than setting dist=+inf) so that
+	// runDijkstra esasily detects if it's not reached
+	delete(*g.Witnesses[round], endpoint.Asn)
 
 	var addedInRound map[int]bool
 	addedInRound = make(map[int]bool)
@@ -511,16 +514,18 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) m
 		for a := range addedInRound {
 			for _, n := range g.Nodes[a].Links {
 				toUpdateZone[n] = g.Nodes[n]
-				witness := (*g.Witnesses[round])[n]
-				if witness.nextHop.Asn == a {
-					nextAdded[n] = true
-					(*g.Witnesses[round])[n].distance = int64Max
-				} else if witness.distance < int64Max {
-					dijNode := (*g.Witnesses[round])[n]
+				if witness, stillThere := (*g.Witnesses[round])[n]; stillThere {
+					if witness.nextHop.Asn == a {
+						nextAdded[n] = true
+						// Delete corresponding dijkstraNode (see above comment)
+						delete((*g.Witnesses[round]), n)
+					} else if witness.distance < int64Max {
+						dijNode := (*g.Witnesses[round])[n]
 
-					// The node could already be in the frontier
-					if frontier.addToFrontier(dijNode) {
-						frontierPopulation++
+						// The node could already be in the frontier
+						if frontier.addToFrontier(dijNode) {
+							frontierPopulation++
+						}
 					}
 				}
 			}

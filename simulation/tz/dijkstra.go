@@ -54,22 +54,25 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		frontierPopulation--
 		frontierPopulation += frontier.expandFromNode(nodes, d, expandFrom, false)
 		// TODO: Remove it, when frontierPopulation is integrated in Frontier struct
-		frontier.checkFrontierConsistency(frontierPopulation)
+		// frontier.checkFrontierConsistency(frontierPopulation)
 	}
 
 	// Discover non GR-reachable nodes and run vanilla Dijkstra
 	// TODO: Maybe refactor
 	notCoveredNodes := 0
-	nonGRneighborood := make(map[int]*Node)
+	nonGRneighborhood := make(map[int]*Node)
 	for asn, nd := range *nodes {
 		if _, reached := (*d)[asn]; !reached {
-			nonGRneighborood[asn] = (*nodes)[asn]
+			nonGRneighborhood[asn] = (*nodes)[asn]
 			for _, l := range nd.Links {
-				nonGRneighborood[l] = (*nodes)[l]
-				// If it is reachable, add to frontier
-				if _, isReachable := (*d)[l]; isReachable {
-					if frontier.addToFrontier((*d)[l]) {
-						frontierPopulation++
+				// Must check that neighbor is in subgraph before considering it
+				if neighborNode, neighborInSubgraph := (*nodes)[l]; neighborInSubgraph {
+					nonGRneighborhood[l] = neighborNode
+					// If it is reachable, add to frontier
+					if _, isReachable := (*d)[l]; isReachable {
+						if frontier.addToFrontier((*d)[l]) {
+							frontierPopulation++
+						}
 					}
 				}
 			}
@@ -78,13 +81,13 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 	}
 	fmt.Println(notCoveredNodes)
 
-	frontier.checkFrontierConsistency(frontierPopulation)
+	// frontier.checkFrontierConsistency(frontierPopulation)
 
 	for frontierPopulation > 0 {
 		expandFrom := frontier.getFromClosest()
 		frontierPopulation--
-		frontierPopulation += frontier.expandFromNode(&nonGRneighborood, d, expandFrom, true)
-		frontier.checkFrontierConsistency(frontierPopulation)
+		frontierPopulation += frontier.expandFromNode(&nonGRneighborhood, d, expandFrom, true)
+		// frontier.checkFrontierConsistency(frontierPopulation)
 	}
 
 	notCoveredNodes++
