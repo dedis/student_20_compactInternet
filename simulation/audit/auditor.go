@@ -391,7 +391,7 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 	var averageStretchIncrease float64
 	var maxStretchIncrease float64
 
-	perRoundSamples := 500
+	perRoundSamples := 50
 
 	for r := 0; r < rounds; r++ {
 

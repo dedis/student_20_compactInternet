@@ -441,23 +441,28 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 				for toUp := range neededAtN {
 					(*toUpdateByLandmark[toUp])[n] = g.Nodes[n]
 				}
+			}
+		}
+		addedInRound = nextAdded
+	}
 
-				// Check if some of the missing top-level landmarks are found
-				topLevelNeeded := g.Landmarks.filterByLevel(deletedFromA, g.K-1)
-				for tl := range topLevelNeeded {
-					if _, isPresent := g.Bunches[n][tl]; isPresent {
-						// Node n has a valid path to tl
-						tempDij := g.Bunches[n][tl].Copy(&g.Nodes)
-						(*dijkstraByLandmark[tl])[n] = tempDij
-						if frontierByLandmark[tl].addToFrontier(tempDij) {
-							populationByLandmark[tl]++
+	// Search for nodes knowing routes to missing top-level landmarks
+	for topLevel := range brokenTopLevel {
+		for _, missingIt := range *toUpdateByLandmark[topLevel] {
+			for _, n := range missingIt.Links {
+				if dij, isPresent := g.Bunches[n][topLevel]; isPresent {
+					// Node n has a valid path to tl and hasn't been discovered yet
+					if _, alreadyInserted := (*toUpdateByLandmark[topLevel])[n]; !alreadyInserted {
+						(*toUpdateByLandmark[topLevel])[n] = g.Nodes[n]
+						tempDij := dij.Copy(&g.Nodes)
+						(*dijkstraByLandmark[topLevel])[n] = tempDij
+						if frontierByLandmark[topLevel].addToFrontier(tempDij) {
+							populationByLandmark[topLevel]++
 						}
-						(*toUpdateByLandmark[tl])[n] = g.Nodes[n]
 					}
 				}
 			}
 		}
-		addedInRound = nextAdded
 	}
 
 	// Audit

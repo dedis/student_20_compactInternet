@@ -91,8 +91,8 @@ func main() {
 	grTzPointer := AbstractGraph(&grTzGraph)
 
 	// Measure cumulative effects of deletions over stretch
-	audit.InitRecorder("./data/cumulative-deletions-4x.05.csv")
-	avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 4, .05)
+	audit.InitRecorder("./data/cumulative-deletions-GR-4x.005.csv")
+	avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 4, .005)
 	fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
