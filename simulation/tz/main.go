@@ -201,7 +201,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 	}
 }
 
-var commandParams = map[string]int{"route": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"route": 2, "bunch": 1, "witness": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 var sh *Shell
 
@@ -231,6 +231,16 @@ func (g *Graph) ExecCommand() bool {
 	switch cmd[0] {
 	case "route":
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
+
+	case "bunch":
+		fmt.Print("\t[")
+		for b := range g.Bunches[u.Int(cmd[1])] {
+			fmt.Printf(" %d ", b)
+		}
+		fmt.Println("]")
+
+	case "witness":
+		fmt.Printf("\tLevel %d witness of %d is %d\n", u.Int(cmd[1]), u.Int(cmd[2]), (*g.Witnesses[u.Int(cmd[1])])[u.Int(cmd[2])].parent.Asn)
 
 	case "delete":
 		_, asnUpdated := g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))

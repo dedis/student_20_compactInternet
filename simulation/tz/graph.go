@@ -370,17 +370,17 @@ func (g *Graph) purgeFromBunch(targetAsn int, unavailable map[int]*Node, nextHop
 	toInvalidate := make(map[int]*Node)
 
 	// Collect destinations to invalidate
-	for e, d := range g.Bunches[targetAsn] {
-		if d.nextHop.Asn == nextHopAsn {
-			if _, isUnreachable := unavailable[e]; isUnreachable {
-				toInvalidate[e] = g.Nodes[e]
+	for dest, dij := range g.Bunches[targetAsn] {
+		if dij.nextHop.Asn == nextHopAsn {
+			if _, isUnreachable := unavailable[dest]; isUnreachable {
+				toInvalidate[dest] = g.Nodes[dest]
 			}
 		}
 	}
 
 	// Update the bunch
-	for e := range toInvalidate {
-		delete(g.Bunches[targetAsn], e)
+	for dest := range toInvalidate {
+		delete(g.Bunches[targetAsn], dest)
 	}
 
 	return toInvalidate
@@ -520,22 +520,36 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) m
 			for _, n := range g.Nodes[a].Links {
 				toUpdateZone[n] = g.Nodes[n]
 				if witness, stillThere := (*g.Witnesses[round])[n]; stillThere {
+					// Invalidate broken routes
 					if witness.nextHop.Asn == a {
 						nextAdded[n] = true
 						// Delete corresponding dijkstraNode (see above comment)
 						delete((*g.Witnesses[round]), n)
-					} else if witness.distance < int64Max {
-						dijNode := (*g.Witnesses[round])[n]
-
-						// The node could already be in the frontier
-						if frontier.addToFrontier(dijNode) {
-							frontierPopulation++
-						}
 					}
 				}
 			}
 		}
 		addedInRound = nextAdded
+	}
+
+	// Need to find routes separately to cope with close branches of shortest tree
+	stillHavingWitness := make(map[int]*Node)
+	for toUp := range toUpdateZone {
+		for _, l := range g.Nodes[toUp].Links {
+			// The node should not have been visited before
+			dijNode, hasWitness := (*g.Witnesses[round])[l]
+			_, alreadyMarked := stillHavingWitness[l]
+			if !alreadyMarked && hasWitness {
+				stillHavingWitness[l] = g.Nodes[l]
+				if frontier.addToFrontier(dijNode) {
+					frontierPopulation++
+				}
+			}
+		}
+	}
+
+	for hwAsn, hwNode := range stillHavingWitness {
+		toUpdateZone[hwAsn] = hwNode
 	}
 
 	// Audit

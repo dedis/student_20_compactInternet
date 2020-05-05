@@ -2,7 +2,6 @@ package core
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
 	"strings"
 
@@ -129,7 +128,8 @@ func (n *Node) GetNeighborIndex(neighborNode *Node) int {
 func (n *Node) DeleteLink(neighborNode *Node) bool {
 	idx := n.GetNeighborIndex(neighborNode)
 	if idx < 0 {
-		panic(fmt.Sprintf("The link between %d and %d does not exist", n.Asn, neighborNode.Asn))
+		// The link does not exist
+		return false
 	}
 
 	linksNum := len(n.Links)

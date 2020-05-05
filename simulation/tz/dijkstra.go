@@ -59,7 +59,6 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 
 	// Discover non GR-reachable nodes and run vanilla Dijkstra
 	// TODO: Maybe refactor
-	notCoveredNodes := 0
 	nonGRneighborhood := make(map[int]*Node)
 	for asn, nd := range *nodes {
 		if _, reached := (*d)[asn]; !reached {
@@ -69,17 +68,15 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 				if neighborNode, neighborInSubgraph := (*nodes)[l]; neighborInSubgraph {
 					nonGRneighborhood[l] = neighborNode
 					// If it is reachable, add to frontier
-					if _, isReachable := (*d)[l]; isReachable {
-						if frontier.addToFrontier((*d)[l]) {
+					if dijNode, isReachable := (*d)[l]; isReachable {
+						if frontier.addToFrontier(dijNode) {
 							frontierPopulation++
 						}
 					}
 				}
 			}
-			notCoveredNodes++
 		}
 	}
-	fmt.Println(notCoveredNodes)
 
 	// frontier.checkFrontierConsistency(frontierPopulation)
 
@@ -89,8 +86,6 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		frontierPopulation += frontier.expandFromNode(&nonGRneighborhood, d, expandFrom, true)
 		// frontier.checkFrontierConsistency(frontierPopulation)
 	}
-
-	notCoveredNodes++
 }
 
 // Copy returns a duplicate of DijkstraGraph
