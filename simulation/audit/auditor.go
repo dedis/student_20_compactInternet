@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	. "dedis.epfl.ch/core"
@@ -66,6 +67,23 @@ type roundChannels struct {
 	valleyContribution  chan int
 }
 
+// TODO: Refactor these 2 functions
+func formatPath(path []*Node) string {
+	var sbPath strings.Builder
+	for _, n := range path {
+		sbPath.WriteString(u.Str(n.Asn) + "-")
+	}
+	return sbPath.String()
+}
+
+func formatTypes(types []int) string {
+	var sbType strings.Builder
+	for _, t := range types {
+		sbType.WriteString(u.Str(t) + "-")
+	}
+	return sbType.String()
+}
+
 func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, channels roundChannels) {
 	origs := make([]int, 0, batches)
 	dests := make([]int, 0, batches)
@@ -91,7 +109,7 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 
 	// Get predictions
 	for b := 0; b < batches; b++ {
-		basePath, _ := (baseline).GetRoute(origs[b], dests[b])
+		basePath, baseLinks := (baseline).GetRoute(origs[b], dests[b])
 		auditPath, auditLinks := (audited).GetRoute(origs[b], dests[b])
 
 		if basePath == nil || auditPath == nil {
@@ -111,6 +129,10 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 			u.Str(len(basePath)-1),
 			u.Str(len(auditPath)-1),
 			u.Str(withValleyFlag),
+			formatPath(basePath),
+			formatTypes(baseLinks),
+			formatPath(auditPath),
+			formatTypes(auditLinks),
 		)
 
 		var sampleStretch float64
@@ -391,7 +413,7 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 	var averageStretchIncrease float64
 	var maxStretchIncrease float64
 
-	perRoundSamples := 50
+	perRoundSamples := 1200
 
 	for r := 0; r < rounds; r++ {
 
