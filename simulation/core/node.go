@@ -101,7 +101,7 @@ func (n *Node) CanTellAbout(subject *Node, target *Node) bool {
 
 	// PEER: Advertise routes from customers and peers
 	case advertisedToType == ToPeer:
-		return heardFromType == ToCustomer || heardFromType == ToPeer
+		return heardFromType == ToCustomer
 
 	// PROVIDER: Advertise routes from customers
 	case advertisedToType == ToProvider:

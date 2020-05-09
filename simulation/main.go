@@ -1,11 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
-	"dedis.epfl.ch/audit"
 	"dedis.epfl.ch/bgp"
 	"dedis.epfl.ch/tz"
 	"dedis.epfl.ch/u"
@@ -39,7 +37,7 @@ func loadAndProcessTZ(folder string, datasetName string, k int, landmarkStrategy
 
 	tzGraph.Preprocess()
 
-	grFiltered := "-GR"
+	grFiltered := "-GRP"
 
 	tz.WriteLandmarksToCsv(folder+datasetName+grFiltered+"-landmarks-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Landmarks)
 	tz.WriteWitnessesToCsv(folder+datasetName+grFiltered+"-witnesses-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Witnesses)
@@ -61,7 +59,7 @@ func loadAndProcessWithLandmarksTZ(folder string, datasetName string, k int, lan
 
 	tzGraph.Preprocess()
 
-	grFiltered := "-GR"
+	grFiltered := "-GRP"
 
 	tz.WriteWitnessesToCsv(folder+datasetName+grFiltered+"-witnesses-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Witnesses)
 	tz.WriteToCsv(folder+datasetName+grFiltered+"-bunches-"+u.Str(landmarkStrategy)+".csv", &map[int]Serializable{0: &tzGraph.Bunches})
@@ -80,7 +78,7 @@ func main() {
 	//tzGraph := restoreTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy)
 	//loadAndProcessTZ("./data/", "202003-full-edges", 3, tz.RandomStrategy)
 
-	grTzGraph := loadAndProcessWithLandmarksTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy, "202003-full-edges-landmarks-2.csv")
+	grTzGraph := restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GRP", 3, tz.HarmonicStrategy)
 	//loadAndProcessWithLandmarksTZ("./data/", "hierarchical-test", 3, tz.HarmonicStrategy, "hierarchical-test-landmarks.csv")
 	//restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GR", 3, tz.HarmonicStrategy)
 	//loadAndProcessWithLandmarksTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy, "202003-full-edges-landmarks-2.csv")
@@ -92,17 +90,17 @@ func main() {
 	// grTzPointer := AbstractGraph(&grTzGraph)
 
 	// Measure stretch
-	audit.InitRecorder("./data/full-stretch-GR-6000.csv")
-	avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 1, 6000)
-	fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
+	// audit.InitRecorder("./data/full-stretch-GRP-4000.csv")
+	// avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 1, 4000)
+	// fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
-	audit.InitRecorder("./data/full-impact-GR-3000.csv")
-	avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
-	fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
+	// audit.InitRecorder("./data/full-impact-GRP-3000.csv")
+	// avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
+	// fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
 
 	// Measure cumulative effects of deletions over stretch
-	// audit.InitRecorder("./data/cumulative-deletions-GR-12x.05.csv")
-	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 12, .05)
+	// audit.InitRecorder("./data/cumulative-deletions-GRP-4x.10.csv")
+	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 4, .10)
 	// fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
@@ -129,6 +127,8 @@ func main() {
 	// if err := exec.Command("cmd", "/C", "shutdown", "/s").Run(); err != nil {
 	// 	fmt.Println("Failed to initiate shutdown:", err)
 	// }
+
+	grTzGraph.PrintRoute(3, 8)
 
 	tz.SetupShell()
 	bgp.SetupShell()

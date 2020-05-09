@@ -88,44 +88,18 @@ func (g *Graph) Activate(nodeIndex int) int {
 
 	for i := 0; i < len(sp.Fresh); i++ {
 		if sp.Fresh[i] {
-			nextHopType := sp.getNextHopType(nd, i)
 			// Advertise change to neighbors
-			for k, link := range nd.Links {
+			for _, link := range nd.Links {
 
 				// Check that it's not this neighbor that has advertised this route to me
 				if !sp.heardFrom(i, g.Nodes[link]) {
-					var flag bool = false
-
-					canTell := false
 
 					if nd.CanTellAbout(sp.NextHop[i], g.Nodes[link]) {
-						canTell = true
-						flag = g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						hasBecomeUnstable := g.Speakers[link].advertise(g.Nodes[link], sp.Destinations[i], nd, sp.Length[i])
+						if hasBecomeUnstable {
+							g.setUnstable(g.Nodes[link])
+						}
 						messagesSent++
-					}
-
-					// TODO: Delete when CanTellAbout is tested
-					switch linkType := nd.Type[k]; {
-					// CUSTOMER: Advertise all routes
-					case linkType == ToCustomer:
-						if !canTell {
-							panic("Wrong GR rules")
-						}
-
-					// PEER: Advertise routes from customers and peers
-					case linkType == ToPeer && (nextHopType == ToCustomer || nextHopType == ToPeer):
-						if !canTell {
-							panic("Wrong GR rules")
-						}
-					// PROVIDER: Advertise routes from customers
-					case linkType == ToProvider && nextHopType == ToCustomer:
-						if !canTell {
-							panic("Wrong GR rules")
-						}
-					}
-
-					if flag {
-						g.setUnstable(g.Nodes[link])
 					}
 				}
 

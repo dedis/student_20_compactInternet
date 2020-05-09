@@ -71,7 +71,7 @@ type roundChannels struct {
 func formatPath(path []*Node) string {
 	var sbPath strings.Builder
 	for _, n := range path {
-		sbPath.WriteString(u.Str(n.Asn) + "-")
+		sbPath.WriteString(u.Str(n.Asn) + ">")
 	}
 	return sbPath.String()
 }
@@ -79,7 +79,7 @@ func formatPath(path []*Node) string {
 func formatTypes(types []int) string {
 	var sbType strings.Builder
 	for _, t := range types {
-		sbType.WriteString(u.Str(t) + "-")
+		sbType.WriteString(u.Str(t) + ">")
 	}
 	return sbType.String()
 }

@@ -233,7 +233,7 @@ func (g *Graph) ExecCommand() bool {
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
 
 	case "bunch":
-		fmt.Print("\t[")
+		fmt.Printf("Size:%d\t[", len(g.Bunches[u.Int(cmd[1])]))
 		for b := range g.Bunches[u.Int(cmd[1])] {
 			fmt.Printf(" %d ", b)
 		}
