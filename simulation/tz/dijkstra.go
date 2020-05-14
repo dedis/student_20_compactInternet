@@ -57,14 +57,11 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		// frontier.checkFrontierConsistency(frontierPopulation)
 	}
 
-	nonGRPreached := 0
-
 	// Discover non GR-reachable nodes and run vanilla Dijkstra
 	// TODO: Maybe refactor
 	nonGRneighborhood := make(map[int]*Node)
 	for asn, nd := range *nodes {
 		if _, reached := (*d)[asn]; !reached {
-			nonGRPreached++
 			nonGRneighborhood[asn] = (*nodes)[asn]
 			for _, l := range nd.Links {
 				// Must check that neighbor is in subgraph before considering it
@@ -81,7 +78,6 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		}
 	}
 
-	fmt.Println(nonGRPreached)
 	// frontier.checkFrontierConsistency(frontierPopulation)
 
 	for frontierPopulation > 0 {

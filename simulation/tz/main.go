@@ -201,7 +201,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 	}
 }
 
-var commandParams = map[string]int{"route": 2, "bunch": 1, "witness": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
+var commandParams = map[string]int{"route": 2, "test-link": 2, "bunch": 1, "witness": 2, "delete": 2, "help": 0, "exit": 0} //map[string]int{"show": 1, "add-route": 1, "evolve": 0, "route": 2, "help": 0, "exit": 0}
 
 var sh *Shell
 
@@ -232,6 +232,9 @@ func (g *Graph) ExecCommand() bool {
 	case "route":
 		g.PrintRoute(u.Int(cmd[1]), u.Int(cmd[2]))
 
+	case "test-link":
+		g.TestLink(u.Int(cmd[1]), u.Int(cmd[2]))
+
 	case "bunch":
 		fmt.Printf("Size:%d\t[", len(g.Bunches[u.Int(cmd[1])]))
 		for b := range g.Bunches[u.Int(cmd[1])] {
@@ -240,11 +243,17 @@ func (g *Graph) ExecCommand() bool {
 		fmt.Println("]")
 
 	case "witness":
-		fmt.Printf("\tLevel %d witness of %d is %d\n", u.Int(cmd[1]), u.Int(cmd[2]), (*g.Witnesses[u.Int(cmd[1])])[u.Int(cmd[2])].parent.Asn)
+		witness := (*g.Witnesses[u.Int(cmd[1])])[u.Int(cmd[2])]
+		fmt.Printf("\tLevel %d witness of %d is %d (distance %d, next-hop %d)\n",
+			u.Int(cmd[1]),
+			u.Int(cmd[2]),
+			witness.parent.Asn,
+			witness.distance,
+			witness.nextHop.Asn)
 
 	case "delete":
-		_, asnUpdated := g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
-		fmt.Printf("Graph updated, %d nodes exchanged updates\n", asnUpdated)
+		_, asnUpdated, asnDistance := g.RemoveEdge(u.Int(cmd[1]), u.Int(cmd[2]))
+		fmt.Printf("Graph updated, %d nodes exchanged updates, the average distance from link is %f\n", len(asnUpdated), asnDistance.Mean())
 
 	case "help":
 		fmt.Println("The available commands are:")
@@ -361,5 +370,23 @@ func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {
 		sh.Write("\n")
 	} else {
 		sh.Write("NO ROUTE FOUND\n")
+	}
+}
+
+// TestLink nicely prints the type of a link between two ASes, if it exists
+func (g *Graph) TestLink(originAsn int, destinationAsn int) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("LINK NOT FOUND")
+		}
+	}()
+
+	origNode, origOk := g.Nodes[originAsn]
+	destNode, destOk := g.Nodes[destinationAsn]
+	if !origOk || !destOk {
+		fmt.Println("INVALID AS SPECIFIED")
+	} else {
+		fmt.Printf("	LINK: #%d %s #%d\n", originAsn, LinkTypeToSymbol(origNode.GetNeighborType(destNode)), destinationAsn)
 	}
 }

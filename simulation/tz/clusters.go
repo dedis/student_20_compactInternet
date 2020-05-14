@@ -47,10 +47,28 @@ func (c *Clusters) calculateClustersForRound(nodes *map[int]*Node, k int, l *Lan
 
 			// Create cluster for w
 			(*c)[w.Asn] = make(map[int]*dijkstraNode)
+
+			// First, add all the leaves (and some other nodes) of the tree
 			for nd := range wClusterGraph {
 				if wClusterGraph[nd].distance < (*prevRound)[nd].distance {
 					(*c)[w.Asn][nd] = wClusterGraph[nd]
 				}
+			}
+
+			// Include missing nodes (to form a spanning tree)
+			inPathNodes := make(map[int]*dijkstraNode)
+			for _, dijNode := range (*c)[w.Asn] {
+				cursor := dijNode
+				for cursor.distance > 0 {
+					if _, inPath := (*c)[w.Asn][cursor.reference]; !inPath {
+						inPathNodes[cursor.reference] = cursor
+					}
+					cursor = wClusterGraph[cursor.nextHop.Asn]
+				}
+			}
+
+			for ip, dij := range inPathNodes {
+				(*c)[w.Asn][ip] = dij
 			}
 		}
 	}

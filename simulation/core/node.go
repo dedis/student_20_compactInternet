@@ -8,6 +8,9 @@ import (
 	"dedis.epfl.ch/u"
 )
 
+// TODO: Debug only, add an attribute in node struct
+const EdgeWeight int64 = 1
+
 // ToProvider specifies the link with a provider
 const ToProvider int = 1
 

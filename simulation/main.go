@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
+	"dedis.epfl.ch/audit"
 	"dedis.epfl.ch/bgp"
 	"dedis.epfl.ch/tz"
 	"dedis.epfl.ch/u"
@@ -59,7 +61,7 @@ func loadAndProcessWithLandmarksTZ(folder string, datasetName string, k int, lan
 
 	tzGraph.Preprocess()
 
-	grFiltered := "-GRP"
+	grFiltered := "spo-GRP"
 
 	tz.WriteWitnessesToCsv(folder+datasetName+grFiltered+"-witnesses-"+u.Str(landmarkStrategy)+".csv", &tzGraph.Witnesses)
 	tz.WriteToCsv(folder+datasetName+grFiltered+"-bunches-"+u.Str(landmarkStrategy)+".csv", &map[int]Serializable{0: &tzGraph.Bunches})
@@ -78,7 +80,7 @@ func main() {
 	//tzGraph := restoreTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy)
 	//loadAndProcessTZ("./data/", "202003-full-edges", 3, tz.RandomStrategy)
 
-	grTzGraph := restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GRP", 3, tz.HarmonicStrategy)
+	grTzGraph := restoreTZ("./data/", "202003-full-edges", "202003-full-edges-spo-GRP", 3, tz.HarmonicStrategy)
 	//loadAndProcessWithLandmarksTZ("./data/", "hierarchical-test", 3, tz.HarmonicStrategy, "hierarchical-test-landmarks.csv")
 	//restoreTZ("./data/", "202003-full-edges", "202003-full-edges-GR", 3, tz.HarmonicStrategy)
 	//loadAndProcessWithLandmarksTZ("./data/", "202003-full-edges", 3, tz.HarmonicStrategy, "202003-full-edges-landmarks-2.csv")
@@ -86,21 +88,21 @@ func main() {
 	bgpGraph := bgp.InitGraph()
 	bgp.LoadFromCsv(&bgpGraph, "./data/202003-full-edges.csv")
 
-	// bgpPointer := AbstractGraph(&bgpGraph)
-	// grTzPointer := AbstractGraph(&grTzGraph)
-
 	// Measure stretch
-	// audit.InitRecorder("./data/full-stretch-GRP-4000.csv")
+	// audit.InitRecorder("./data/full-stretch-spo-GRP-4000.csv")
 	// avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 1, 4000)
 	// fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
-	// audit.InitRecorder("./data/full-impact-GRP-3000.csv")
-	// avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
-	// fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
+	audit.InitRecorder("./data/full-impact-spo-GRP-3000.csv")
+	avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
+	fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
 
-	// Measure cumulative effects of deletions over stretch
-	// audit.InitRecorder("./data/cumulative-deletions-GRP-4x.10.csv")
-	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 4, .10)
+	// bgpPointer := AbstractGraph(&bgpGraph)
+	// grTzPointer := AbstractGraph(&grTzGraph)
+
+	// // Measure cumulative effects of deletions over stretch
+	// audit.InitRecorder("./data/cumulative-deletions-spo-GRP-12x.05.csv")
+	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 12, .05)
 	// fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
@@ -128,10 +130,75 @@ func main() {
 	// 	fmt.Println("Failed to initiate shutdown:", err)
 	// }
 
-	grTzGraph.PrintRoute(3, 8)
+	// grTzGraph.PrintRoute(3, 8)
+
+	// delFile, err := os.Open("./data/debug-of-deletions.csv")
+	// if err != nil {
+	// 	panic("Cannot open deletion file")
+	// }
+
+	// delCsv := csv.NewReader(delFile)
+
+	// for i := 0; ; i++ {
+	// 	row, err := delCsv.Read()
+	// 	if err == io.EOF {
+	// 		break
+	// 	}
+
+	// 	if u.Int(row[0]) > 0 {
+	// 		grTzGraph.RemoveEdge(u.Int(row[0]), u.Int(row[1]))
+	// 	}
+	// }
 
 	tz.SetupShell()
 	bgp.SetupShell()
+
+	// rand.Seed(time.Now().UnixNano())
+
+	// for trial := 0; ; trial++ {
+	// 	endpoint, neighborIdx := audit.RandomLink(&grTzGraph, grTzGraph.CountLinks())
+
+	// 	outcome, impactedArea, _ := grTzGraph.RemoveEdge(endpoint.Asn, endpoint.Links[neighborIdx])
+
+	// 	if outcome {
+
+	// 		couldHaveBeenImpacted := make(map[int]bool)
+	// 		for nd := range impactedArea {
+	// 			for _, ln := range grTzGraph.Nodes[nd].Links {
+	// 				couldHaveBeenImpacted[ln] = true
+	// 			}
+	// 		}
+
+	// 		for ca := range couldHaveBeenImpacted {
+	// 			impactedArea[ca] = true
+	// 		}
+
+	// 		for i := 0; i < 2*len(impactedArea); i++ {
+	// 			startRandom := rand.Int() % len(impactedArea)
+	// 			var startNode int
+	// 			for n := range impactedArea {
+	// 				if startRandom == 0 {
+	// 					startNode = n
+	// 				}
+	// 				startRandom--
+	// 			}
+	// 			endRandom := rand.Int() % len(impactedArea)
+	// 			var endNode int
+	// 			for n := range impactedArea {
+	// 				if endRandom == 0 {
+	// 					endNode = n
+	// 				}
+	// 				endRandom--
+	// 			}
+
+	// 			routeNodes, _ := grTzGraph.GetRoute(startNode, endNode)
+
+	// 			if i%400 == 0 {
+	// 				fmt.Printf("Trial #%d, path #%d: %s\n", trial, i, routeNodes)
+	// 			}
+	// 		}
+	// 	}
+	// }
 
 	for grTzGraph.ExecCommand() {
 	}

@@ -17,12 +17,12 @@ import (
 type Landmarks map[int]map[*Node]bool
 
 // Serialize produces a representation of Landmarks suitable to be saved to file
-func (f *Landmarks) Serialize(index int) [][]string {
+func (l *Landmarks) Serialize(index int) [][]string {
 
-	content := make([][]string, 0, len(*f))
+	content := make([][]string, 0, len(*l))
 
-	for level := 0; level < len(*f); level++ {
-		for ld := range (*f)[level] {
+	for level := 0; level < len(*l); level++ {
+		for ld := range (*l)[level] {
 			content = append(content, []string{u.Str(level), u.Str(ld.Asn)})
 		}
 	}
@@ -49,6 +49,20 @@ func (l *Landmarks) filterByLevel(candidates map[int]*Node, level int) map[int]*
 	}
 
 	return candidatesInLevel
+}
+
+// Copy returns a duplicate of Landmarks
+func (l *Landmarks) Copy(nodes *map[int]*Node) *Landmarks {
+	copyLandmarks := make(Landmarks)
+
+	for r, ld := range *l {
+		copyLandmarks[r] = make(map[*Node]bool)
+		for n := range ld {
+			copyLandmarks[r][(*nodes)[n.Asn]] = true
+		}
+	}
+
+	return &copyLandmarks
 }
 
 func (g *Graph) randomStrategy() {

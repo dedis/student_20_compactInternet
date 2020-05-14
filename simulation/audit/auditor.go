@@ -11,7 +11,8 @@ import (
 	"dedis.epfl.ch/u"
 )
 
-func randomNode(a AbstractGraph) *Node {
+// Returns a randomly chosen node of the AbstractGraph
+func RandomNode(a AbstractGraph) *Node {
 	nodes := a.GetNodes()
 
 	stop := rand.Int() % len(*nodes)
@@ -26,9 +27,9 @@ func randomNode(a AbstractGraph) *Node {
 	return nil
 }
 
-// randomLink returns a randomly chosen link
+// RandomLink returns a randomly chosen link
 // with the form of one of its endpoints and the index of the link to the other endpoint
-func randomLink(a AbstractGraph, linksNum int) (*Node, int) {
+func RandomLink(a AbstractGraph, linksNum int) (*Node, int) {
 	nodes := a.GetNodes()
 
 	// Must be doubled, since each edge appears twice
@@ -90,8 +91,8 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, ch
 
 	for b := 0; b < batches; b++ {
 		// Choose endpoints (baseline.Nodes == audited.Nodes)
-		origs = append(origs, randomNode(baseline).Asn)
-		dest := randomNode(baseline)
+		origs = append(origs, RandomNode(baseline).Asn)
+		dest := RandomNode(baseline)
 		dests = append(dests, dest.Asn)
 
 		// Only destinations must be declared
@@ -215,15 +216,16 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 	for b := 0; b < batches; {
 
 		// Choose a random link (from a node with more than 1 link)
-		endpoint, linkIdx := randomLink(audited, linksNum)
+		endpoint, linkIdx := RandomLink(audited, linksNum)
 		for len(endpoint.Links) < 2 {
-			endpoint, linkIdx = randomLink(audited, linksNum)
+			endpoint, linkIdx = RandomLink(audited, linksNum)
 		}
 
 		otherAsn := endpoint.Links[linkIdx]
 
 		// Delete link from the graph
-		success, impactedNodes := audited.RemoveEdge(endpoint.Asn, otherAsn)
+		success, impactedArea, impactedMeasure := audited.RemoveEdge(endpoint.Asn, otherAsn)
+		impactedNodes := len(impactedArea)
 		linksNum--
 
 		if success {
@@ -240,6 +242,7 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 				u.Str(len(endpoint.Links)+1),
 				u.Str(len(otherEndpoint.Links)+1),
 				u.Str(impactedNodes),
+				impactedMeasure.String(),
 			)
 		}
 	}
@@ -270,9 +273,9 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 	for b < batches {
 
 		// Choose a random link (with endpoint with more than 1 link)
-		endpoint, linkIdx := randomLink(audited, linksNum)
+		endpoint, linkIdx := RandomLink(audited, linksNum)
 		for len(endpoint.Links) < 2 || len((*audited.GetNodes())[endpoint.Links[linkIdx]].Links) < 2 {
-			endpoint, linkIdx = randomLink(audited, linksNum)
+			endpoint, linkIdx = RandomLink(audited, linksNum)
 		}
 
 		otherAsn := endpoint.Links[linkIdx]
@@ -294,8 +297,10 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 		audited.DeleteDestination(otherAsn)
 		audited.Evolve()
 
-		baselineSuccess, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
-		success, impactedNum := audited.RemoveEdge(endpoint.Asn, otherAsn)
+		baselineSuccess, _, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
+		success, impactedArea, _ := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		impactedNum := len(impactedArea)
 
 		if success {
 			if !baselineSuccess {
@@ -347,7 +352,7 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 	return averageStretchIncrease, maxStretchIncrease
 }
 
-func performDeletionsRound(baseline AbstractGraph, audited AbstractGraph, round int, deletionProportion float64) bool {
+func deletionsRound(baseline AbstractGraph, audited AbstractGraph, round int, deletionProportion float64) bool {
 
 	linksNum := audited.CountLinks()
 
@@ -357,16 +362,18 @@ func performDeletionsRound(baseline AbstractGraph, audited AbstractGraph, round 
 
 	for toDelete > 0 {
 		// Choose a random link
-		endpoint, linkIdx := randomLink(audited, linksNum)
+		endpoint, linkIdx := RandomLink(audited, linksNum)
 		otherAsn := endpoint.Links[linkIdx]
 		// Here, 8 links are required at both endpoints to perform a link deletion
 		for len(endpoint.Links) < 8 || len((*audited.GetNodes())[otherAsn].Links) < 8 {
-			endpoint, linkIdx = randomLink(audited, linksNum)
+			endpoint, linkIdx = RandomLink(audited, linksNum)
 			otherAsn = endpoint.Links[linkIdx]
 		}
 
-		baselineSuccess, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
-		auditedSuccess, impactedNum := audited.RemoveEdge(endpoint.Asn, otherAsn)
+		baselineSuccess, _, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
+		auditedSuccess, impactedArea, _ := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		impactedNum := len(impactedArea)
 
 		if auditedSuccess {
 			if !baselineSuccess {
@@ -375,14 +382,6 @@ func performDeletionsRound(baseline AbstractGraph, audited AbstractGraph, round 
 
 			toDelete--
 			linksNum--
-
-			/*
-				record(
-					u.Str(round),
-					u.Str(len(endpoint.Links)+1),
-					u.Str(len((*audited.GetNodes())[otherAsn].Links)),
-				)
-			*/
 
 		} else if !auditedSuccess && impactedNum > 0 {
 			// Multiple connected components detected
@@ -449,7 +448,7 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 			safeBaselineCopy := baseline.Copy()
 			safeAuditedCopy := audited.Copy()
 
-			for !performDeletionsRound(baseline, audited, r, deletionProportion) {
+			for !deletionsRound(baseline, audited, r, deletionProportion) {
 				// Try again
 				fmt.Println("Obtained 2 connected components, retrying from safe copy ...")
 				baseline = safeBaselineCopy.Copy()

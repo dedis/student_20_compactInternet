@@ -142,17 +142,17 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 	return append(route, g.Nodes[destinationAsn]), linkTypes
 }
 
-func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure) {
 
 	a, aOk := g.Nodes[aAsn]
 	b, bOk := g.Nodes[bAsn]
 
 	if !(aOk && bOk) {
-		return false, 0
+		return false, nil, nil
 	}
 
 	if len(a.Links) <= 1 || len(b.Links) <= 1 {
-		return false, 0
+		return false, nil, nil
 	}
 
 	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
@@ -160,7 +160,7 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 	}
 
 	// TODO: Modify this
-	return true, 0
+	return true, nil, nil
 }
 
 func (g *Graph) printSpeakerStatus(asn int) {

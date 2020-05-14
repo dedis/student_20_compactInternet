@@ -116,7 +116,7 @@ func (f *Frontier) expandFromNode(nodes *map[int]*Node, dijkstraGraph *DijkstraG
 			// TODO: Modify here
 			// Filter announcements using Gao-Rexford rules
 			if notGRcompliant || currNode.CanTellAbout(n.nextHop, neighborNode) {
-				updatedDistance := n.distance + edgeWeight
+				updatedDistance := n.distance + EdgeWeight
 				d, exists := (*dijkstraGraph)[neighbor]
 				if exists {
 					// Relax edge if needed

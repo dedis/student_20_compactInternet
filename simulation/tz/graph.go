@@ -9,9 +9,6 @@ import (
 	"dedis.epfl.ch/u"
 )
 
-// TODO: Debug only, add an attribute in node struct
-const edgeWeight int64 = 1
-
 // TODO: Change that to proper INT64 MAX
 const int64Max int64 = 1000000
 
@@ -78,20 +75,6 @@ func (g *Graph) ElectLandmarks(selectionStrategy int) {
 	case ImmunityStrategy:
 		g.immunityStrategy()
 	}
-}
-
-// Copy returns a duplicate of Landmarks
-func (l *Landmarks) Copy(nodes *map[int]*Node) *Landmarks {
-	copyLandmarks := make(Landmarks)
-
-	for r, ld := range *l {
-		copyLandmarks[r] = make(map[*Node]bool)
-		for n := range ld {
-			copyLandmarks[r][(*nodes)[n.Asn]] = true
-		}
-	}
-
-	return &copyLandmarks
 }
 
 func (g *Graph) calculateWitnessForRound(round int) *DijkstraGraph {
@@ -313,17 +296,18 @@ func union(acculator map[int]bool, toAdd map[int]bool) map[int]bool {
 // returns the number of nodes impacted by the update
 // (false, 0) : the deletion could not be performed
 // (false, >0): the deletion was performed but the graph is NO MORE 1 connected component
-func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
+// returns the combined TapeMeasure
+func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure) {
 
 	a, aOk := g.Nodes[aAsn]
 	b, bOk := g.Nodes[bAsn]
 
 	if !(aOk && bOk) {
-		return false, 0
+		return false, nil, nil
 	}
 
 	if len(a.Links) <= 1 || len(b.Links) <= 1 {
-		return false, 0
+		return false, nil, nil
 	}
 
 	if !(a.DeleteLink(b) && b.DeleteLink(a)) {
@@ -335,10 +319,16 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 
 	impactedArea := make(map[int]bool)
 
+	tempWitnessMeasure := InitMeasure(aAsn)
+	impactMeasure := &tempWitnessMeasure
+
 	// Fix Witnesses
 	for round := g.K - 1; round >= 0; round-- {
-		fixWitFromA := g.fixWitnessByRound(a, b, round)
-		fixWitFromB := g.fixWitnessByRound(b, a, round)
+		fixWitFromA, witnessFromA := g.fixWitnessByRound(a, b, round)
+		fixWitFromB, witnessFromB := g.fixWitnessByRound(b, a, round)
+
+		impactMeasure = Combine(impactMeasure, &witnessFromA)
+		impactMeasure = Combine(impactMeasure, &witnessFromB)
 
 		impactedArea = union(impactedArea, fixWitFromA)
 		impactedArea = union(impactedArea, fixWitFromB)
@@ -347,8 +337,11 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 		g.enforceAsteriskRule(round)
 	}
 
-	fixBunFromA := g.fixBunches(a, b)
-	fixBunFromB := g.fixBunches(b, a)
+	fixBunFromA, tapeMeasureFromA := g.fixBunches(a, b)
+	fixBunFromB, tapeMeasureFromB := g.fixBunches(b, a)
+
+	impactMeasure = Combine(impactMeasure, &tapeMeasureFromA)
+	impactMeasure = Combine(impactMeasure, &tapeMeasureFromB)
 
 	impactedArea = union(impactedArea, fixBunFromA)
 	impactedArea = union(impactedArea, fixBunFromB)
@@ -356,11 +349,12 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, int) {
 	// Check that the graph is still connected
 	for ia := range impactedArea {
 		if len(g.Bunches[ia]) < len(g.Landmarks[g.K-1]) {
-			return false, len(impactedArea)
+			return false, impactedArea, nil
 		}
 	}
 
-	return true, len(impactedArea)
+	// TODO: Can revert to len(impactedArea)
+	return true, impactedArea, impactMeasure
 }
 
 // Remove from the bunch of 'target' the set of routes to 'unavailable' passing through 'nextHop'
@@ -387,8 +381,10 @@ func (g *Graph) purgeFromBunch(targetAsn int, unavailable map[int]*Node, nextHop
 }
 
 // fixBunches restores the correctness of bunches
-// returns the set of asn touched by the update
-func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
+// returns
+//  - the set of asn touched by the update of top-level landmarks only
+//  - The measure of the distance of nodes that invalidate some destinations
+func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) (map[int]bool, TapeMeasure) {
 
 	unavailable := make(map[int]*Node)
 
@@ -400,6 +396,9 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 	}
 
 	brokenTopLevel := g.Landmarks.filterByLevel(unavailable, g.K-1)
+
+	// This impact considers only nodes that must invalidate some destinations
+	measureImpact := InitMeasure(endpoint.Asn)
 
 	dijkstraByLandmark := make(map[int]*DijkstraGraph)
 	frontierByLandmark := make(map[int]*Frontier)
@@ -432,9 +431,15 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 			for _, n := range g.Nodes[a].Links {
 				revokedDests := g.purgeFromBunch(n, deletedFromA, a)
 
+				// TODO: denug check
+				if _, rvk := revokedDests[50607]; n == 6939 && rvk {
+					fmt.Println("Revoked")
+				}
+
 				// Check if some destinations were revoked
 				if len(revokedDests) > 0 {
 					nextAdded[n] = revokedDests
+					measureImpact.Extend(a, n)
 				}
 
 				neededAtN := g.Landmarks.filterByLevel(revokedDests, g.K-1)
@@ -448,12 +453,16 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 
 	// Search for nodes knowing routes to missing top-level landmarks
 	for topLevel := range brokenTopLevel {
+		// Could need to perform multiple passes (because of insertions)
+		havingTopLevel := make(map[int]bool)
 		for _, missingIt := range *toUpdateByLandmark[topLevel] {
 			for _, n := range missingIt.Links {
 				if dij, isPresent := g.Bunches[n][topLevel]; isPresent {
 					// Node n has a valid path to tl and hasn't been discovered yet
-					if _, alreadyInserted := (*toUpdateByLandmark[topLevel])[n]; !alreadyInserted {
-						(*toUpdateByLandmark[topLevel])[n] = g.Nodes[n]
+					_, alreadyInserted := (*toUpdateByLandmark[topLevel])[n]
+					_, alreadyDiscovered := havingTopLevel[n]
+					if !alreadyInserted && !alreadyDiscovered {
+						havingTopLevel[n] = true
 						tempDij := dij.Copy(&g.Nodes)
 						(*dijkstraByLandmark[topLevel])[n] = tempDij
 						if frontierByLandmark[topLevel].addToFrontier(tempDij) {
@@ -462,6 +471,10 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 					}
 				}
 			}
+		}
+
+		for knowRoute := range havingTopLevel {
+			(*toUpdateByLandmark[topLevel])[knowRoute] = g.Nodes[knowRoute]
 		}
 	}
 
@@ -482,16 +495,16 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) map[int]bool {
 		}
 	}
 
-	return impactedAsn
+	return impactedAsn, measureImpact
 }
 
 // Restore the correctness of witnesses for a given round
 // return the set of asn needed to complete the operation
-func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) map[int]bool {
+func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) (map[int]bool, TapeMeasure) {
 
 	// Check if the witness was reached through the broken link
 	if (*g.Witnesses[round])[endpoint.Asn].nextHop.Asn != brokenLink.Asn {
-		return nil
+		return map[int]bool{endpoint.Asn: true}, InitMeasure(endpoint.Asn)
 	}
 
 	toUpdateZone := make(map[int]*Node)
@@ -513,18 +526,21 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) m
 
 	frontierPopulation := 0
 
+	impactMeasure := InitMeasure(endpoint.Asn)
+
 	// Find the Nodes that must be updated
 	for len(addedInRound) > 0 {
 		nextAdded := make(map[int]bool)
 		for a := range addedInRound {
 			for _, n := range g.Nodes[a].Links {
-				toUpdateZone[n] = g.Nodes[n]
 				if witness, stillThere := (*g.Witnesses[round])[n]; stillThere {
 					// Invalidate broken routes
 					if witness.nextHop.Asn == a {
+						toUpdateZone[n] = g.Nodes[n]
 						nextAdded[n] = true
 						// Delete corresponding dijkstraNode (see above comment)
 						delete((*g.Witnesses[round]), n)
+						impactMeasure.Extend(a, n)
 					}
 				}
 			}
@@ -560,7 +576,7 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) m
 
 	g.Witnesses[round].runDijkstra(&toUpdateZone, &frontier, frontierPopulation)
 
-	return impactedAsn
+	return impactedAsn, impactMeasure
 }
 
 // Evolve brings the graph to a stable state

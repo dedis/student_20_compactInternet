@@ -8,7 +8,7 @@ type AbstractGraph interface {
 	DeleteDestination(dest int)
 	SetDestinations(dest map[int]bool)
 	Evolve() int
-	RemoveEdge(a int, b int) (bool, int)
+	RemoveEdge(a int, b int) (bool, map[int]bool, *TapeMeasure)
 	Copy() AbstractGraph
 }
 
