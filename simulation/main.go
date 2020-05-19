@@ -93,17 +93,25 @@ func main() {
 	// avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 1, 4000)
 	// fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
-	audit.InitRecorder("./data/full-impact-spo-GRP-3000.csv")
-	avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
-	fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
+	// audit.InitRecorder("./data/full-impact-spo-GRP-chosen.csv")
+	// avgImpact, maxImpact := audit.MeasureChosenEdgeDeletionImpact(&grTzGraph, "./data/202003-to-202004-disappearing.csv")
+	// fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
 
-	// bgpPointer := AbstractGraph(&bgpGraph)
-	// grTzPointer := AbstractGraph(&grTzGraph)
+	// audit.InitRecorder("./data/full-impact-spo-GRP-3000.csv")
+	// avgImpact, maxImpact := audit.MeasureEdgeDeletionImpact(&bgpGraph, &grTzGraph, 3000)
+	// fmt.Printf("Average impact: %f		Maximum impact: %f\n", avgImpact, maxImpact)
+
+	bgpPointer := AbstractGraph(&bgpGraph)
+	grTzPointer := AbstractGraph(&grTzGraph)
 
 	// // Measure cumulative effects of deletions over stretch
 	// audit.InitRecorder("./data/cumulative-deletions-spo-GRP-12x.05.csv")
 	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 12, .05)
 	// fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
+
+	audit.InitRecorder("./data/cumulative-deletions-spo-GRP-12xChosen-2000-2.csv")
+	avgCumulIncrease, maxCumulIncrease := audit.MeasureChosenDeletionsStretch(&bgpPointer, &grTzPointer, 12, "./data/202003-to-202004-disappearing.csv")
+	fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
 	// refreshedTzGraph := loadAndProcessTZ("./data/", "missing-edges-12x0.050", 3, tz.HarmonicStrategy)
@@ -122,8 +130,8 @@ func main() {
 	// avgStretch, maxStretch := audit.MeasureStretch(&bgpGraph, &grTzGraph, 4, 1000)
 	// fmt.Printf("Average stretch: %f		Maximum stretch: %f\n", avgStretch, maxStretch)
 
-	// audit.InitRecorder("./data/full-deletion-stretch-GR-300.csv")
-	// avgDelStretch, maxDelStretch := audit.MeasureDeletionStretch(&bgpGraph, &grTzGraph, 300)
+	// audit.InitRecorder("./data/full-deletion-stretch-spo-GRP-1000.csv")
+	// avgDelStretch, maxDelStretch := audit.MeasureDeletionStretch(&bgpGraph, &grTzGraph, 1000)
 	// fmt.Printf("Average stretch increase: %f 	Max stretch increase: %f\n", avgDelStretch, maxDelStretch)
 
 	// if err := exec.Command("cmd", "/C", "shutdown", "/s").Run(); err != nil {

@@ -29,3 +29,16 @@ func Str(a int) string {
 func Str64(a int64) string {
 	return strconv.FormatInt(a, 10)
 }
+
+// Union performs the union of two sets
+func Union(acculator map[int]bool, toAdd map[int]bool) map[int]bool {
+	if acculator == nil {
+		panic("Cannot perform union on nil accumulator")
+	}
+	if toAdd != nil {
+		for e := range toAdd {
+			acculator[e] = true
+		}
+	}
+	return acculator
+}

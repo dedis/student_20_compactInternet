@@ -277,19 +277,6 @@ func (g *Graph) Copy() AbstractGraph {
 	return &copyGraph
 }
 
-// Performs the union of two sets
-func union(acculator map[int]bool, toAdd map[int]bool) map[int]bool {
-	if acculator == nil {
-		panic("Cannot perform union on nil accumulator")
-	}
-	if toAdd != nil {
-		for e := range toAdd {
-			acculator[e] = true
-		}
-	}
-	return acculator
-}
-
 // RemoveEdge deletes an edge from the graph and update the
 // relevant data structures
 // returns true if the deletion was successful
@@ -330,8 +317,8 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure
 		impactMeasure = Combine(impactMeasure, &witnessFromA)
 		impactMeasure = Combine(impactMeasure, &witnessFromB)
 
-		impactedArea = union(impactedArea, fixWitFromA)
-		impactedArea = union(impactedArea, fixWitFromB)
+		impactedArea = u.Union(impactedArea, fixWitFromA)
+		impactedArea = u.Union(impactedArea, fixWitFromB)
 
 		// Enforce asterisk rule only when witnesses are coherent
 		g.enforceAsteriskRule(round)
@@ -343,14 +330,22 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure
 	impactMeasure = Combine(impactMeasure, &tapeMeasureFromA)
 	impactMeasure = Combine(impactMeasure, &tapeMeasureFromB)
 
-	impactedArea = union(impactedArea, fixBunFromA)
-	impactedArea = union(impactedArea, fixBunFromB)
+	impactedArea = u.Union(impactedArea, fixBunFromA)
+	impactedArea = u.Union(impactedArea, fixBunFromB)
+
+	disconnectedNodes := make(map[int]bool)
 
 	// Check that the graph is still connected
 	for ia := range impactedArea {
 		if len(g.Bunches[ia]) < len(g.Landmarks[g.K-1]) {
-			return false, impactedArea, nil
+			disconnectedNodes[ia] = true
 		}
+	}
+
+	if len(disconnectedNodes) > 0 {
+		// If there are several connected components,
+		// return the disconnected nodes
+		return false, disconnectedNodes, nil
 	}
 
 	// TODO: Can revert to len(impactedArea)

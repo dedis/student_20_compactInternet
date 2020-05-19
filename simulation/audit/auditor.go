@@ -1,9 +1,12 @@
 package audit
 
 import (
+	"encoding/csv"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 
@@ -85,19 +88,35 @@ func formatTypes(types []int) string {
 	return sbType.String()
 }
 
-func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, channels roundChannels) {
+func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, disconnectedNodes map[int]bool, channels roundChannels) {
 	origs := make([]int, 0, batches)
 	dests := make([]int, 0, batches)
 
 	for b := 0; b < batches; b++ {
 		// Choose endpoints (baseline.Nodes == audited.Nodes)
-		origs = append(origs, RandomNode(baseline).Asn)
-		dest := RandomNode(baseline)
-		dests = append(dests, dest.Asn)
+
+		// Choose endpoint that are reachable
+		// TODO: Maybe refactor this
+		var or *Node
+		var ds *Node
+		for {
+			or = RandomNode(baseline)
+			ds = RandomNode(baseline)
+
+			_, orDisconnected := disconnectedNodes[or.Asn]
+			_, dsDisconnected := disconnectedNodes[ds.Asn]
+
+			if !orDisconnected && !dsDisconnected {
+				break
+			}
+		}
+
+		origs = append(origs, or.Asn)
+		dests = append(dests, ds.Asn)
 
 		// Only destinations must be declared
-		baseline.SetDestinations(map[int]bool{dest.Asn: true})
-		audited.SetDestinations(map[int]bool{dest.Asn: true})
+		baseline.SetDestinations(map[int]bool{ds.Asn: true})
+		audited.SetDestinations(map[int]bool{ds.Asn: true})
 	}
 
 	// Evolve graphs (if needed)
@@ -185,7 +204,7 @@ func MeasureStretch(baseline AbstractGraph, audited AbstractGraph, rounds int, b
 	for i := 0; i < rounds; i++ {
 		baselineCopy := baseline.Copy()
 		auditedCopy := audited.Copy()
-		go stretchRound(baselineCopy, auditedCopy, batches, channels)
+		go stretchRound(baselineCopy, auditedCopy, batches, map[int]bool{}, channels)
 	}
 
 	for i := 0; i < rounds; i++ {
@@ -201,6 +220,80 @@ func MeasureStretch(baseline AbstractGraph, audited AbstractGraph, rounds int, b
 	return stretch / float64(rounds*batches), max
 }
 
+func loadEdgeDeletionsFile(filename string) [][]int {
+
+	csvFile, err := os.Open(filename)
+	if err != nil {
+		panic("Unable to load sequence of edges deletions")
+	}
+	defer csvFile.Close()
+
+	reader := csv.NewReader(csvFile)
+
+	// deletionsList contains the endpoints of edges to delete
+	// (there is no rule on endpoints ordering)
+	deletionsList := make([][]int, 0, 64)
+
+	for i := 0; ; i++ {
+		row, err := reader.Read()
+		if err == io.EOF {
+			break
+		}
+
+		deletionsList = append(deletionsList, []int{u.Int(row[0]), u.Int(row[1])})
+	}
+
+	return deletionsList
+}
+
+// MeasureChosenEdgeDeletionImpact measures the number of nodes that must be updated when a sequence of edge
+// deletions is executed
+// deletionsFilename: 	 path to csv file containing the sequence of deletions
+// returns (averageImpact, maxImpact)
+func MeasureChosenEdgeDeletionImpact(audited AbstractGraph, deletionsFilename string) (float64, float64) {
+
+	var averageImpact float64
+	var maxImpact float64
+
+	linksNum := audited.CountLinks()
+
+	deletionsList := loadEdgeDeletionsFile(deletionsFilename)
+
+	var b int
+
+	for _, endpoints := range deletionsList {
+		// Delete link from the graph
+		success, impactedArea, impactedMeasure := audited.RemoveEdge(endpoints[0], endpoints[1])
+		impactedNodes := len(impactedArea)
+		linksNum--
+
+		if success {
+			// Consider the sample only if it's successful
+			b++
+			averageImpact += float64(impactedNodes)
+			maxImpact = math.Max(maxImpact, float64(impactedNodes))
+
+			endA := (*audited.GetNodes())[endpoints[0]]
+			endB := (*audited.GetNodes())[endpoints[1]]
+
+			record(
+				u.Str(endpoints[0]),
+				u.Str(endpoints[1]),
+				u.Str(len(endA.Links)+1),
+				u.Str(len(endB.Links)+1),
+				u.Str(impactedNodes),
+				impactedMeasure.String(),
+			)
+		}
+	}
+
+	averageImpact /= float64(b)
+
+	stopRecording()
+
+	return averageImpact, maxImpact
+}
+
 // MeasureEdgeDeletionImpact measures the number of nodes that must be updated when a random link fails
 // batches: 	 number of random link deletions
 // returns (averageImpact, maxImpact)
@@ -213,7 +306,9 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 
 	linksNum := audited.CountLinks()
 
-	for b := 0; b < batches; {
+	var b int
+
+	for b < batches {
 
 		// Choose a random link (from a node with more than 1 link)
 		endpoint, linkIdx := RandomLink(audited, linksNum)
@@ -247,7 +342,7 @@ func MeasureEdgeDeletionImpact(baseline AbstractGraph, audited AbstractGraph, ba
 		}
 	}
 
-	averageImpact /= float64(batches)
+	averageImpact /= float64(b)
 
 	stopRecording()
 
@@ -396,6 +491,117 @@ func deletionsRound(baseline AbstractGraph, audited AbstractGraph, round int, de
 	return true
 }
 
+func chosenDeletionsRound(baseline AbstractGraph, audited AbstractGraph, deletionsList [][]int, slot int, rounds int) map[int]bool {
+
+	startIdx := slot * len(deletionsList) / rounds
+	var endIdx int
+
+	if slot == rounds-1 {
+		endIdx = len(deletionsList)
+	} else {
+		endIdx = (slot + 1) * len(deletionsList) / rounds
+	}
+
+	toDelete := endIdx - startIdx
+
+	fmt.Printf("Starting round #%d: deleting %d links\n", slot, toDelete)
+
+	disconnectedNodes := make(map[int]bool)
+
+	for startIdx < endIdx {
+
+		endA := deletionsList[startIdx][0]
+		endB := deletionsList[startIdx][1]
+
+		auditedSuccess, impactedArea, _ := audited.RemoveEdge(endA, endB)
+
+		impactedNum := len(impactedArea)
+
+		if auditedSuccess {
+			baselineSuccess, _, _ := baseline.RemoveEdge(endA, endB)
+			if !baselineSuccess {
+				panic("Baseline and Audited graphs out of sync")
+			}
+
+		} else if !auditedSuccess && impactedNum > 0 {
+			// Multiple connected components detected
+			disconnectedNodes = u.Union(disconnectedNodes, impactedArea)
+		} else {
+			// Something strange happened
+			auditedNodes := audited.GetNodes()
+			fmt.Printf("Could not perform the deletion of %d (%d) -> %d (%d)\n", endA, len((*auditedNodes)[endA].Links), endB, len((*auditedNodes)[endB].Links))
+		}
+
+		startIdx++
+	}
+
+	return disconnectedNodes
+}
+
+// MeasureChosenDeletionsStretch computes the average and maximum increase in empirical stretch after having deleted
+// a specific sequence of edges from the graph (distributed over 'rounds' rounds)
+// If recording is active, for each round, the lengths and shapes of measured paths are saved to file
+func MeasureChosenDeletionsStretch(baselineOriginal *AbstractGraph, auditedOriginal *AbstractGraph, rounds int, deletionsFilename string) (float64, float64) {
+
+	// Conduct measurements on a copy of the graphs
+	baseline := (*baselineOriginal).Copy()
+	audited := (*auditedOriginal).Copy()
+
+	var previousStretch float64
+	var averageStretchIncrease float64
+	var maxStretchIncrease float64
+
+	deletionsList := loadEdgeDeletionsFile(deletionsFilename)
+
+	perRoundSamples := 2000
+
+	disconnectedNodes := make(map[int]bool)
+
+	// 1 round is performed, since the round#0 is without deletions
+	for r := 0; r <= rounds; r++ {
+
+		record(
+			u.Str(-r),
+			u.Str(-r),
+			u.Str(-r),
+		)
+
+		// Measure stretch
+		stretchChannel := roundChannels{
+			stretchContribution: make(chan float64, 1),
+			maxContribution:     make(chan float64, 1),
+			valleyContribution:  make(chan int, 1),
+		}
+
+		go stretchRound(baseline, audited, perRoundSamples, disconnectedNodes, stretchChannel)
+
+		roundStretch := <-stretchChannel.stretchContribution / float64(perRoundSamples)
+		roundStretchIncrease := roundStretch - previousStretch
+		previousStretch = roundStretch
+
+		averageStretchIncrease += roundStretchIncrease
+		if roundStretchIncrease > maxStretchIncrease {
+			maxStretchIncrease = roundStretchIncrease
+		}
+
+		fmt.Printf("	Measured %f increase in round stretch\n", roundStretchIncrease)
+
+		if r != rounds {
+			newlyDisconnected := chosenDeletionsRound(baseline, audited, deletionsList, r, rounds)
+			disconnectedNodes = u.Union(disconnectedNodes, newlyDisconnected)
+		}
+	}
+
+	averageStretchIncrease /= float64(rounds)
+
+	stopRecording()
+
+	(*baselineOriginal) = baseline
+	(*auditedOriginal) = audited
+
+	return averageStretchIncrease, maxStretchIncrease
+}
+
 // MeasureRandomDeletionsStretch computes the average and maximum increase in empirical stretch after having deleted
 // a fraction 'deletionProportion' of edges from the graph (without creating multiple connected components)
 // this operation is repeated ('rounds' - 1) times
@@ -426,12 +632,12 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 
 		// Measure stretch
 		stretchChannel := roundChannels{
-			stretchContribution: make(chan float64, rounds),
-			maxContribution:     make(chan float64, rounds),
-			valleyContribution:  make(chan int, rounds),
+			stretchContribution: make(chan float64, 1),
+			maxContribution:     make(chan float64, 1),
+			valleyContribution:  make(chan int, 1),
 		}
 
-		go stretchRound(baseline, audited, perRoundSamples, stretchChannel)
+		go stretchRound(baseline, audited, perRoundSamples, map[int]bool{}, stretchChannel)
 
 		roundStretch := <-stretchChannel.stretchContribution / float64(perRoundSamples)
 		roundStretchIncrease := roundStretch - previousStretch
