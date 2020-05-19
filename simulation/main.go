@@ -109,8 +109,8 @@ func main() {
 	// avgCumulIncrease, maxCumulIncrease := audit.MeasureRandomDeletionsStretch(&bgpPointer, &grTzPointer, 12, .05)
 	// fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
-	audit.InitRecorder("./data/cumulative-deletions-spo-GRP-12xChosen-2000-2.csv")
-	avgCumulIncrease, maxCumulIncrease := audit.MeasureChosenDeletionsStretch(&bgpPointer, &grTzPointer, 12, "./data/202003-to-202004-disappearing.csv")
+	audit.InitRecorder("./data/cumulative-deletions-spo-GRP-12x0305-2000.csv")
+	avgCumulIncrease, maxCumulIncrease := audit.MeasureChosenDeletionsStretch(&bgpPointer, &grTzPointer, 12, "./data/202003-to-202005-disappearing.csv")
 	fmt.Printf("Average stretch increase (by round): %f		Maximum stretch increase (by round): %f\n", avgCumulIncrease, maxCumulIncrease)
 
 	// Compute TZ from scratch on graph with missing edges
