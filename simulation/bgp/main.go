@@ -65,7 +65,6 @@ func LoadFromCsv(graph *Graph, filename string) error {
 var sh *Shell
 
 // SetupShell initializes the variable sh
-// TODO: Refactor this.
 func SetupShell() {
 	sh = InitShell("$", " ")
 }

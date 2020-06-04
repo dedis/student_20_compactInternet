@@ -159,7 +159,7 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure
 		panic("Link deletion unsuccessful! Corrupted graph")
 	}
 
-	// TODO: Modify this
+	// Impact and TapeMeasure not supported
 	return true, nil, nil
 }
 
@@ -176,7 +176,6 @@ func (g *Graph) printSpeakerStatus(asn int) {
 
 // Copy returns a new Graph
 func (g *Graph) Copy() AbstractGraph {
-	// TODO: Think if deeper copy is needed
 	copyGraph := Graph{
 		Nodes:     make(map[int]*Node),
 		Speakers:  make(map[int]*Speaker),

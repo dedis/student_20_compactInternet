@@ -8,7 +8,7 @@ import (
 	"dedis.epfl.ch/u"
 )
 
-// TODO: Debug only, add an attribute in node struct
+// EdgeWeight defines the weight of all the edges
 const EdgeWeight int64 = 1
 
 // ToProvider specifies the link with a provider

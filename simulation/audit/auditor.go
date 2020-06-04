@@ -72,7 +72,6 @@ type roundChannels struct {
 	valleyContribution  chan int
 }
 
-// TODO: Refactor these 2 functions
 func formatPath(path []*Node) string {
 	var sbPath strings.Builder
 	for _, n := range path {
@@ -105,7 +104,6 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, di
 		// Choose endpoints (baseline.Nodes == audited.Nodes)
 
 		// Choose endpoint that are reachable
-		// TODO: Maybe refactor this
 		var or *Node
 		var ds *Node
 		for {
@@ -142,9 +140,6 @@ func stretchRound(baseline AbstractGraph, audited AbstractGraph, batches int, di
 		auditPath, auditLinks := (audited).GetRoute(origs[b], dests[b])
 
 		if basePath == nil || auditPath == nil {
-			// TODO: Insert useful reaction
-			// println disabled to clean tmux logs
-			//fmt.Println("Unable to compare routes from " + u.Str(origs[b]) + " to " + u.Str(dests[b]))
 			continue
 		}
 
@@ -384,8 +379,6 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 
 		otherAsn := endpoint.Links[linkIdx]
 
-		// TODO: Could process many destinations at a time
-
 		// Measure path lengths before deletion
 		baseline.SetDestinations(map[int]bool{otherAsn: true})
 		baseline.Evolve()
@@ -413,7 +406,8 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 
 			baseline.SetDestinations(map[int]bool{otherAsn: true})
 			baseline.Evolve()
-			// TODO: Should do the same with audited
+			audited.SetDestinations(map[int]bool{otherAsn: true})
+			audited.Evolve()
 
 			baselineAfter, baselineTypesAfter := baseline.GetRoute(endpoint.Asn, otherAsn)
 			auditedAfter, auditedTypesAfter := audited.GetRoute(endpoint.Asn, otherAsn)
@@ -489,8 +483,6 @@ func MeasureLandmarkLevelAfterDeletion(baselineGraph AbstractGraph, auditedGraph
 
 		otherAsn := endpoint.Links[linkIdx]
 
-		// TODO: Could process many destinations at a time
-
 		// Measure path lengths before deletion
 		baseline.SetDestinations(map[int]bool{otherAsn: true})
 		baseline.Evolve()
@@ -518,7 +510,8 @@ func MeasureLandmarkLevelAfterDeletion(baselineGraph AbstractGraph, auditedGraph
 
 			baseline.SetDestinations(map[int]bool{otherAsn: true})
 			baseline.Evolve()
-			// TODO: Should do the same with audited
+			audited.SetDestinations(map[int]bool{otherAsn: true})
+			audited.Evolve()
 
 			baselineAfter, baselineTypesAfter := baseline.GetRoute(endpoint.Asn, otherAsn)
 			levelAfter, auditedAsnAfter := audited.ApproximatePath(endpoint.Asn, otherAsn)
@@ -732,7 +725,6 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 
 	for r := 0; r < rounds; r++ {
 
-		// TODO: Hnadle this better
 		// Mark the beginning of a round
 		record(
 			u.Str(-r),

@@ -180,7 +180,7 @@ func (g *Graph) expandPath(a int, w int, b int, round int) []int {
 	for ; b != w; b = g.Bunches[b][w].nextHop.Asn {
 		hopsBtoW = append(hopsBtoW, b)
 
-		// TODO: Debug check
+		// Debug check
 		if len(hopsBtoW) > 30 {
 			fmt.Println("--------------!!!!!!!--------------")
 			fmt.Println("Needed to cut b->w path, got")
@@ -237,7 +237,7 @@ func (g *Graph) ApproximatePath(from int, to int) (int, []int) {
 			return i, g.expandPath(from, w, to, i)
 		}
 
-		// TODO: Debug check
+		// Debug check
 		if i == g.K {
 			panic("Calculated a wrong distance approximation")
 		}
@@ -254,7 +254,6 @@ func (g *Graph) ApproximatePath(from int, to int) (int, []int) {
 
 // Copy returns a duplicate of the Graph
 func (g *Graph) Copy() AbstractGraph {
-	// TODO: Think about that. Up to now there is no need to copy anything
 	copyGraph := Graph{
 		Nodes:     make(map[int]*Node),
 		K:         g.K,
@@ -280,7 +279,6 @@ func (g *Graph) Copy() AbstractGraph {
 
 // CopyAsTz returns a duplicate of the tz.Graph
 func (g *Graph) CopyAsTz() *Graph {
-	// TODO: Think about that. Up to now there is no need to copy anything
 	copyGraph := Graph{
 		Nodes:     make(map[int]*Node),
 		K:         g.K,
@@ -328,9 +326,6 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure
 		panic("Link deletion unsuccessful! Corrupted graph")
 	}
 
-	// TODO: Here, take into account the messages sent all the way back
-	// to the landmarks (??)
-
 	impactedArea := make(map[int]bool)
 
 	tempWitnessMeasure := InitMeasure(aAsn)
@@ -375,13 +370,11 @@ func (g *Graph) RemoveEdge(aAsn int, bAsn int) (bool, map[int]bool, *TapeMeasure
 		return false, disconnectedNodes, nil
 	}
 
-	// TODO: Can revert to len(impactedArea)
 	return true, impactedArea, impactMeasure
 }
 
 // Remove from the bunch of 'target' the set of routes to 'unavailable' passing through 'nextHop'
 // returns the set of invalidated destinations
-// TODO: Reduce scope of argument + generalize function to multiple level of landmarks
 func (g *Graph) purgeFromBunch(targetAsn int, unavailable map[int]*Node, nextHopAsn int) map[int]*Node {
 	toInvalidate := make(map[int]*Node)
 
@@ -452,11 +445,6 @@ func (g *Graph) fixBunches(endpoint *Node, brokenLink *Node) (map[int]bool, Tape
 		for a, deletedFromA := range addedInRound {
 			for _, n := range g.Nodes[a].Links {
 				revokedDests := g.purgeFromBunch(n, deletedFromA, a)
-
-				// TODO: denug check
-				if _, rvk := revokedDests[50607]; n == 6939 && rvk {
-					fmt.Println("Revoked")
-				}
 
 				// Check if some destinations were revoked
 				if len(revokedDests) > 0 {
@@ -603,18 +591,15 @@ func (g *Graph) fixWitnessByRound(endpoint *Node, brokenLink *Node, round int) (
 
 // Evolve brings the graph to a stable state
 func (g *Graph) Evolve() int {
-	// TODO: Here too, unsupportedOperation
 	return 0
 }
 
 // SetDestinations updates the speakers according to the set of chosen destinations
 func (g *Graph) SetDestinations(dest map[int]bool) {
-	// TODO: This is called by default by auditor
 	//unsupportedOperation("SetDestinations")
 }
 
 func (g *Graph) DeleteDestination(dest int) {
-	// TODO: This is called by default by auditor
 	// unsupportedOperation("DeleteDestination")
 }
 
@@ -629,7 +614,6 @@ func (g *Graph) GetRoute(originAsn int, destinationAsn int) ([]*Node, []int) {
 		return nil, nil
 	}
 
-	// TODO: Add support for link type
 	_, hops := g.ApproximatePath(originAsn, destinationAsn)
 
 	nodeHops := make([]*Node, 0, len(hops))

@@ -113,7 +113,6 @@ func (f *Frontier) expandFromNode(nodes *map[int]*Node, dijkstraGraph *DijkstraG
 		// Works also on induced subgraphs
 		if neighborNode, inSubgraph := (*nodes)[neighbor]; inSubgraph {
 
-			// TODO: Modify here
 			// Filter announcements using Gao-Rexford rules
 			if notGRcompliant || currNode.CanTellAbout(n.nextHop, neighborNode) {
 				updatedDistance := n.distance + EdgeWeight
@@ -150,7 +149,7 @@ func (f *Frontier) expandFromNode(nodes *map[int]*Node, dijkstraGraph *DijkstraG
 	return discoveredNodes
 }
 
-// TODO: Debug method
+// Debug method
 func (f *Frontier) checkFrontierConsistency(expectedPopulation int) {
 	for _, zone := range f.Zones {
 		expectedPopulation -= len(zone)

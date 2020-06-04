@@ -16,7 +16,6 @@ type Speaker struct {
 }
 
 func (s *Speaker) String(n *Node) string {
-	// TODO: Refine it
 	var sb strings.Builder
 	for idx, dest := range s.Destinations {
 		sb.WriteString("	")
@@ -56,7 +55,6 @@ func (s *Speaker) String(n *Node) string {
 
 // InitSpeaker initializes the Speaker associated with a certain Node
 func InitSpeaker(node *Node) *Speaker {
-	// TODO: Clean method
 	speaker := Speaker{Fresh: nil, Destinations: nil, NextHop: nil, Length: nil}
 	return &speaker
 }

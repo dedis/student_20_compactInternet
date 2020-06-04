@@ -4,10 +4,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"strings"
-	"time"
 
 	. "dedis.epfl.ch/core"
 	"dedis.epfl.ch/shell"
@@ -74,7 +72,6 @@ func WriteLandmarksToCsv(filename string, payload *Landmarks) {
 }
 
 // WriteWitnessesToCsv stores witnesses to a csv file
-// TODO: Consider that level-0 landmarks are implicitly known
 func WriteWitnessesToCsv(filename string, payload *map[int]*DijkstraGraph) {
 
 	csvFile, err := os.Create(filename)
@@ -193,7 +190,7 @@ func (g *Graph) LoadBunchesFromCsv(filename string) {
 		}
 	}
 
-	// TODO: Debug check
+	// Debug check
 	for k, bc := range g.Bunches {
 		if len(bc) < len(g.Landmarks[g.K-1]) {
 			panic("Node " + u.Str(k) + "was not loaded correctly")
@@ -205,7 +202,7 @@ var commandParams = map[string]int{"route": 2, "test-link": 2, "bunch": 1, "witn
 
 var sh *Shell
 
-// SetupShell initializes a global shell for this module (TODO: Change that)
+// SetupShell initializes a global shell for this module
 func SetupShell() {
 	sh = InitShell("$", " ")
 }
@@ -273,87 +270,43 @@ func (g *Graph) ExecCommand() bool {
 //var witnesses *map[int]*DijkstraGraph
 //var bunches *Clusters
 
-func Main() {
+// func Main() {
 
-	sh := InitShell("$", " ")
+// 	sh := InitShell("$", " ")
 
-	// Initialize the graph
-	graph := InitGraph()
-	graph.K = 3
+// 	// Initialize the graph
+// 	graph := InitGraph()
+// 	graph.K = 3
 
-	err := LoadFromCsv(&graph, "./data/202003-edges.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
-	if err != nil {
-		fmt.Println(err)
-		panic(err)
-	}
+// 	err := LoadFromCsv(&graph, "./data/202003-edges.csv") //LoadFromCsv("../../../simulation/test.csv") //LoadFromCsv("../../../simulation/202003-edges.csv")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
 
-	rand.Seed(time.Now().UnixNano())
+// 	rand.Seed(time.Now().UnixNano())
 
-	graph.ElectLandmarks(RandomStrategy)
+// 	graph.ElectLandmarks(RandomStrategy)
 
-	// TODO: This calculates witnesses and bunches from scratch (it will become a different command)
-	/*
-		graph.Landmarks[0] = map[*Node]bool{
-			graph.Nodes[1]: true,
-			graph.Nodes[2]: true,
-			graph.Nodes[3]: true,
-			graph.Nodes[4]: true,
-			graph.Nodes[5]: true,
-			graph.Nodes[6]: true,
-			graph.Nodes[7]: true,
-		}
-		graph.Landmarks[1] = map[*Node]bool{
-			graph.Nodes[1]: true,
-			graph.Nodes[2]: true,
-			graph.Nodes[7]: true,
-		}
-		graph.Landmarks[2] = map[*Node]bool{
-			graph.Nodes[1]: true,
-			graph.Nodes[7]: true,
-		}
-		graph.Landmarks[3] = map[*Node]bool{}
+// 	graph.Evolve()
 
-		/*
+// 	WriteWitnessesToCsv("./data/202003-witnesses.csv", &graph.Witnesses)
+// 	WriteToCsv("./data/202003-bunches.csv", &map[int]Serializable{0: &graph.Bunches})
 
-			fmt.Println("Landmarks:")
-			fmt.Println(landmarks)
-			witnesses, bunches := graph.CalculateWitnesses(k, landmarks)
+// 	fmt.Println("/////////////")
 
-			WriteWitnessesToCsv("../../../simulation/202003-witnesses.csv", witnesses)
-			WriteToCsv("../../../simulation/202003-bunches.csv", &map[int]Serializable{0: bunches})
+// 	// Here, data are loaded from file
+// 	sh.Write("Loading witnesses...")
+// 	graph.LoadWitnessesFromCsv("./data/202003-witnesses.csv")
+// 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
+// 	sh.Write("Loading bunches...")
+// 	graph.LoadBunchesFromCsv("./data/202003-bunches.csv")
+// 	sh.Write("	", Yellow, "[OK]", Clear, "\n")
 
-			fmt.Println("...............")
+// 	for graph.ExecCommand() {
+// 	}
 
-			/*
-				for i := 0; i <= k; i++ {
-					fmt.Printf("Round %d:\n", i)
-					fmt.Println((*witnesses)[i])
-				}
-				fmt.Println("---")
-				fmt.Println(bunches)
-	*/
-
-	graph.Evolve()
-
-	WriteWitnessesToCsv("./data/202003-witnesses.csv", &graph.Witnesses)
-	WriteToCsv("./data/202003-bunches.csv", &map[int]Serializable{0: &graph.Bunches})
-
-	fmt.Println("/////////////")
-
-	// TODO: Clean this function
-
-	// Here, data are loaded from file
-	sh.Write("Loading witnesses...")
-	graph.LoadWitnessesFromCsv("./data/202003-witnesses.csv")
-	sh.Write("	", Yellow, "[OK]", Clear, "\n")
-	sh.Write("Loading bunches...")
-	graph.LoadBunchesFromCsv("./data/202003-bunches.csv")
-	sh.Write("	", Yellow, "[OK]", Clear, "\n")
-
-	for graph.ExecCommand() {
-	}
-
-}
+// }
 
 // PrintRoute nicely prints the route from origin to destination returned by GetRoute
 func (g *Graph) PrintRoute(originAsn int, destinationAsn int) {

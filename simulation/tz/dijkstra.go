@@ -37,7 +37,7 @@ func (d *DijkstraGraph) Serialize(index int) [][]string {
 	rows := make([][]string, 0, len(*d))
 
 	for key, val := range *d {
-		// TODO: Debug
+		// Debug check
 		if key != val.reference {
 			fmt.Printf("For key %d, dijkstraNode (ref %d) contained: %s\n", key, val.reference, val.String())
 			panic("Debug check failed")
@@ -53,12 +53,9 @@ func (d *DijkstraGraph) runDijkstra(nodes *map[int]*Node, frontier *Frontier, fr
 		expandFrom := frontier.getFromClosest()
 		frontierPopulation--
 		frontierPopulation += frontier.expandFromNode(nodes, d, expandFrom, false)
-		// TODO: Remove it, when frontierPopulation is integrated in Frontier struct
-		// frontier.checkFrontierConsistency(frontierPopulation)
 	}
 
 	// Discover non GR-reachable nodes and run vanilla Dijkstra
-	// TODO: Maybe refactor
 	nonGRneighborhood := make(map[int]*Node)
 	for asn, nd := range *nodes {
 		if _, reached := (*d)[asn]; !reached {

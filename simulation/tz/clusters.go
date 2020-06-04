@@ -6,7 +6,6 @@ import (
 )
 
 // Clusters represents both Clusters and Bunches in the algorithm
-// !!WARNING!! TODO: Right now, clusters loaded from file do not have 'parent' filled
 type Clusters map[int]map[int]*dijkstraNode
 
 // Serialize implements the interface Serializable for *Clusters
