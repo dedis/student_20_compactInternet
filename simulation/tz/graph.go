@@ -222,18 +222,19 @@ func (g *Graph) printPath(a int, w int, b int, round int) {
 }
 
 // ApproximatePath compute an approximation of the path from 'from' to 'to'
-// It returns (an estimation of) the distance and a path
-func (g *Graph) ApproximatePath(from int, to int) (int64, []int) {
+// It returns the level of landmarks used and a path
+func (g *Graph) ApproximatePath(from int, to int) (int, []int) {
 
 	var w int = from
 	var i int = 0
 
 	for {
 
-		if w2to, ok := g.Bunches[to][w]; ok {
-			from2w := (*g.Witnesses[i])[from].distance
+		if _, ok := g.Bunches[to][w]; ok {
+			// Distance estimation
+			// = *g.Witnesses[i])[from].distance + w2to.distance
 
-			return from2w + w2to.distance, g.expandPath(from, w, to, i)
+			return i, g.expandPath(from, w, to, i)
 		}
 
 		// TODO: Debug check
@@ -253,6 +254,32 @@ func (g *Graph) ApproximatePath(from int, to int) (int64, []int) {
 
 // Copy returns a duplicate of the Graph
 func (g *Graph) Copy() AbstractGraph {
+	// TODO: Think about that. Up to now there is no need to copy anything
+	copyGraph := Graph{
+		Nodes:     make(map[int]*Node),
+		K:         g.K,
+		Landmarks: nil,
+		Witnesses: make(map[int]*DijkstraGraph),
+		Bunches:   make(Clusters),
+	}
+
+	for k, v := range g.Nodes {
+		copyGraph.Nodes[k] = v.Copy()
+	}
+
+	copyGraph.Landmarks = *g.Landmarks.Copy(&copyGraph.Nodes)
+
+	for w, v := range g.Witnesses {
+		copyGraph.Witnesses[w] = v.Copy(&copyGraph.Nodes)
+	}
+
+	copyGraph.Bunches = *g.Bunches.Copy(&copyGraph.Nodes)
+
+	return &copyGraph
+}
+
+// CopyAsTz returns a duplicate of the tz.Graph
+func (g *Graph) CopyAsTz() *Graph {
 	// TODO: Think about that. Up to now there is no need to copy anything
 	copyGraph := Graph{
 		Nodes:     make(map[int]*Node),

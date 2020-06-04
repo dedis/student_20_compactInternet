@@ -86,6 +86,44 @@ func (n Node) String() string {
 	return sb.String()
 }
 
+func grpRule(heardFromType int, advertisedToType int) bool {
+	switch {
+	// CUSTOMER: Advertise all routes
+	case advertisedToType == ToCustomer:
+		return true
+
+	// PEER: Advertise routes from customers
+	case advertisedToType == ToPeer:
+		return heardFromType == ToCustomer
+
+	// PROVIDER: Advertise routes from customers
+	case advertisedToType == ToProvider:
+		return heardFromType == ToCustomer
+
+	default:
+		panic("Invalid link type")
+	}
+}
+
+func grRule(heardFromType int, advertisedToType int) bool {
+	switch {
+	// CUSTOMER: Advertise all routes
+	case advertisedToType == ToCustomer:
+		return true
+
+	// PEER: Advertise routes from customers and peers
+	case advertisedToType == ToPeer:
+		return heardFromType == ToCustomer || heardFromType == ToPeer
+
+	// PROVIDER: Advertise routes from customers
+	case advertisedToType == ToProvider:
+		return heardFromType == ToCustomer
+
+	default:
+		panic("Invalid link type")
+	}
+}
+
 // CanTellAbout enforces Gao-Rexford rules, determining if the presence of
 // a link between 'n' and 'subject' can be revealed to 'target'
 func (n *Node) CanTellAbout(subject *Node, target *Node) bool {
@@ -97,22 +135,7 @@ func (n *Node) CanTellAbout(subject *Node, target *Node) bool {
 	heardFromType := n.GetNeighborType(subject)
 	advertisedToType := n.GetNeighborType(target)
 
-	switch {
-	// CUSTOMER: Advertise all routes
-	case advertisedToType == ToCustomer:
-		return true
-
-	// PEER: Advertise routes from customers and peers
-	case advertisedToType == ToPeer:
-		return heardFromType == ToCustomer
-
-	// PROVIDER: Advertise routes from customers
-	case advertisedToType == ToProvider:
-		return heardFromType == ToCustomer
-
-	default:
-		panic("Invalid link type")
-	}
+	return grpRule(heardFromType, advertisedToType)
 }
 
 // GetNeighborType returns the type of the link connecting the node to a neighbor

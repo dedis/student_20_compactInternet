@@ -171,7 +171,7 @@ func (g *Graph) harmonicStrategy() {
 
 	}
 
-	// Pick landmarks
+	// Pick level-0 landmarks
 	g.Landmarks[0] = make(map[*Node]bool)
 	for _, v := range g.Nodes {
 		g.Landmarks[0][v] = true
@@ -180,12 +180,21 @@ func (g *Graph) harmonicStrategy() {
 	for i := 1; i < g.K; i++ {
 		g.Landmarks[i] = make(map[*Node]bool)
 
-		for n := range g.Landmarks[i-1] {
-			extraction := rand.Float64()
-			if extraction < math.Pow(updatedProbs[n.Asn], 1/float64(i))*selProbability {
-				g.Landmarks[i][n] = true
+		targetNumber := math.Pow(float64(len(g.Nodes)), 1-float64(i)/float64(g.K))
+
+		for targetNumber > 0 {
+			for n := range g.Landmarks[i-1] {
+				extraction := rand.Float64()
+				if extraction < math.Pow(updatedProbs[n.Asn], 1/float64(i))*selProbability {
+					if _, alreadyInserted := g.Landmarks[i][n]; !alreadyInserted {
+						g.Landmarks[i][n] = true
+						targetNumber--
+					}
+				}
 			}
 		}
+
+		fmt.Printf("Landmarks level#%d: %d\n", i, len(g.Landmarks[i]))
 	}
 
 	g.Landmarks[g.K] = nil

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	. "dedis.epfl.ch/core"
+	"dedis.epfl.ch/tz"
 	"dedis.epfl.ch/u"
 )
 
@@ -78,6 +79,14 @@ func formatPath(path []*Node) string {
 		sbPath.WriteString(u.Str(n.Asn) + ">")
 	}
 	return sbPath.String()
+}
+
+func formatAsnPath(asnPath []int) string {
+	var sbAsnPath strings.Builder
+	for _, n := range asnPath {
+		sbAsnPath.WriteString(u.Str(n) + ">")
+	}
+	return sbAsnPath.String()
 }
 
 func formatTypes(types []int) string {
@@ -380,11 +389,11 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 		// Measure path lengths before deletion
 		baseline.SetDestinations(map[int]bool{otherAsn: true})
 		baseline.Evolve()
-		baselineBefore, _ := baseline.GetRoute(endpoint.Asn, otherAsn)
+		baselineBefore, baselineTypesBefore := baseline.GetRoute(endpoint.Asn, otherAsn)
 
 		audited.SetDestinations(map[int]bool{otherAsn: true})
 		audited.Evolve()
-		auditedBefore, _ := audited.GetRoute(endpoint.Asn, otherAsn)
+		auditedBefore, auditedTypesBefore := audited.GetRoute(endpoint.Asn, otherAsn)
 		linksNum--
 
 		baseline.DeleteDestination(otherAsn)
@@ -406,8 +415,8 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 			baseline.Evolve()
 			// TODO: Should do the same with audited
 
-			baselineAfter, _ := baseline.GetRoute(endpoint.Asn, otherAsn)
-			auditedAfter, _ := audited.GetRoute(endpoint.Asn, otherAsn)
+			baselineAfter, baselineTypesAfter := baseline.GetRoute(endpoint.Asn, otherAsn)
+			auditedAfter, auditedTypesAfter := audited.GetRoute(endpoint.Asn, otherAsn)
 
 			if baselineAfter == nil {
 				// After the deletion, there is no path respecting GR rules in the original graph (only paths with valleys)
@@ -424,9 +433,17 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 
 			record(
 				u.Str(len(baselineBefore)),
+				formatPath(baselineBefore),
+				formatTypes(baselineTypesBefore),
 				u.Str(len(auditedBefore)),
+				formatPath(auditedBefore),
+				formatTypes(auditedTypesBefore),
 				u.Str(len(baselineAfter)),
+				formatPath(baselineAfter),
+				formatTypes(baselineTypesAfter),
 				u.Str(len(auditedAfter)),
+				formatPath(auditedAfter),
+				formatTypes(auditedTypesAfter),
 			)
 		} else if !success && impactedNum > 0 {
 			// Game over! The graph is no more a connected component
@@ -445,6 +462,99 @@ func MeasureDeletionStretch(baselineOriginal AbstractGraph, auditedOriginal Abst
 	stopRecording()
 
 	return averageStretchIncrease, maxStretchIncrease
+}
+
+// MeasureLandmarkLevelAfterDeletion stores which level of landmarks is used
+// to compute the path between to adjacent nodes, before and after the edge
+// connecting them is deleted
+// WARNING: Only works on tz.Graph
+func MeasureLandmarkLevelAfterDeletion(baselineGraph AbstractGraph, auditedGraph *tz.Graph, samples int) {
+
+	baseline := baselineGraph.Copy()
+	audited := auditedGraph.CopyAsTz()
+
+	rand.Seed(time.Now().UnixNano())
+
+	linksNum := audited.CountLinks()
+
+	var s int = 0
+
+	for s < samples {
+
+		// Choose a random link (with endpoint with more than 1 link)
+		endpoint, linkIdx := RandomLink(audited, linksNum)
+		for len(endpoint.Links) < 4 || len(audited.Nodes[endpoint.Links[linkIdx]].Links) < 4 {
+			endpoint, linkIdx = RandomLink(audited, linksNum)
+		}
+
+		otherAsn := endpoint.Links[linkIdx]
+
+		// TODO: Could process many destinations at a time
+
+		// Measure path lengths before deletion
+		baseline.SetDestinations(map[int]bool{otherAsn: true})
+		baseline.Evolve()
+		baselineBefore, baselineTypesBefore := baseline.GetRoute(endpoint.Asn, otherAsn)
+
+		audited.SetDestinations(map[int]bool{otherAsn: true})
+		audited.Evolve()
+		levelBefore, auditedAsnBefore := audited.ApproximatePath(endpoint.Asn, otherAsn)
+		linksNum--
+
+		baseline.DeleteDestination(otherAsn)
+		baseline.Evolve()
+		audited.DeleteDestination(otherAsn)
+		audited.Evolve()
+
+		baselineSuccess, _, _ := baseline.RemoveEdge(endpoint.Asn, otherAsn)
+		success, impactedArea, _ := audited.RemoveEdge(endpoint.Asn, otherAsn)
+
+		impactedNum := len(impactedArea)
+
+		if success {
+			if !baselineSuccess {
+				panic("Difference in graphs")
+			}
+
+			baseline.SetDestinations(map[int]bool{otherAsn: true})
+			baseline.Evolve()
+			// TODO: Should do the same with audited
+
+			baselineAfter, baselineTypesAfter := baseline.GetRoute(endpoint.Asn, otherAsn)
+			levelAfter, auditedAsnAfter := audited.ApproximatePath(endpoint.Asn, otherAsn)
+
+			if baselineAfter == nil {
+				// After the deletion, there is no path respecting GR rules in the original graph (only paths with valleys)
+				continue
+			}
+
+			// Consider the sample only if it's successful
+			s++
+
+			record(
+				u.Str(len(baselineBefore)),
+				formatTypes(baselineTypesBefore),
+				u.Str(levelBefore),
+				formatAsnPath(auditedAsnBefore),
+				u.Str(len(baselineAfter)),
+				formatTypes(baselineTypesAfter),
+				u.Str(levelAfter),
+				formatAsnPath(auditedAsnAfter),
+			)
+
+		} else if !success && impactedNum > 0 {
+			// Game over! The graph is no more a connected component
+			// Start with fresh copies
+			fmt.Printf("Starting from fresh graphs after %d samples (detected > 1 connected component)\n", s)
+			baseline = baselineGraph.Copy()
+			audited = auditedGraph.CopyAsTz()
+
+			// Recount links
+			linksNum = audited.CountLinks()
+		}
+	}
+
+	stopRecording()
 }
 
 func deletionsRound(baseline AbstractGraph, audited AbstractGraph, round int, deletionProportion float64) bool {
@@ -676,4 +786,21 @@ func MeasureRandomDeletionsStretch(baselineOriginal *AbstractGraph, auditedOrigi
 	(*auditedOriginal) = audited
 
 	return averageStretchIncrease, maxStretchIncrease
+}
+
+// MeasureEndpointsDegrees returns the list of the degrees of endpoints
+// of each edge in the graph
+func MeasureEndpointsDegrees(graph AbstractGraph) {
+	nodes := *graph.GetNodes()
+
+	for _, n := range nodes {
+		for _, l := range n.Links {
+			record(
+				u.Str(len(n.Links)),
+				u.Str(len(nodes[l].Links)),
+			)
+		}
+	}
+
+	stopRecording()
 }
