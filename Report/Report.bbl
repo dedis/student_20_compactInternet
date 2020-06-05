@@ -1,0 +1,738 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.1 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated as
+% required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+\datalist[entry]{nty/global//global/global}
+  \entry{afekUpperLowerBounds1989}{inproceedings}{}
+    \name{author}{3}{}{%
+      {{hash=AY}{%
+         family={Afek},
+         familyi={A\bibinitperiod},
+         given={Y.},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=GE}{%
+         family={Gafni},
+         familyi={G\bibinitperiod},
+         given={E.},
+         giveni={E\bibinitperiod},
+      }}%
+      {{hash=RM}{%
+         family={Ricklin},
+         familyi={R\bibinitperiod},
+         given={M.},
+         giveni={M\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{IEEE}}%
+    }
+    \strng{namehash}{AYGERM1}
+    \strng{fullhash}{AYGERM1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{A}
+    \field{sortinithash}{A}
+    \field{booktitle}{30th {{Annual Symposium}} on {{Foundations}} of
+  {{Computer Science}}}
+    \verb{doi}
+    \verb 10.1109/SFCS.1989.63505
+    \endverb
+    \field{eventtitle}{30th {{Annual Symposium}} on {{Foundations}} of
+  {{Computer Science}}}
+    \field{isbn}{978-0-8186-1982-3}
+    \field{pages}{370\bibrangedash 375}
+    \field{title}{Upper and Lower Bounds for Routing Schemes in Dynamic
+  Networks}
+    \verb{url}
+    \verb http://ieeexplore.ieee.org/document/63505/
+    \endverb
+    \list{location}{1}{%
+      {{Research Triangle Park, NC, USA}}%
+    }
+    \field{year}{1989}
+    \field{urlday}{25}
+    \field{urlmonth}{05}
+    \field{urlyear}{2020}
+  \endentry
+
+  \entry{GraphCAIDA}{online}{}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{A}
+    \field{sortinithash}{A}
+    \field{title}{{{AS}} Graph, {{CAIDA}}}
+    \verb{url}
+    \verb http://data.caida.org/datasets/as-relationships/serial-2/
+    \endverb
+  \endentry
+
+  \entry{CAIDAASRank}{online}{}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{C}
+    \field{sortinithash}{C}
+    \field{title}{{{CAIDA ASRank}}}
+    \verb{url}
+    \verb https://asrank.caida.org/
+    \endverb
+  \endentry
+
+  \entry{dReportIABWorkshop}{report}{}
+    \name{author}{3}{}{%
+      {{hash=DM}{%
+         family={D},
+         familyi={D},
+         given={Meyer},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=LZ}{%
+         family={L},
+         familyi={L},
+         given={Zhang},
+         giveni={Z\bibinitperiod},
+      }}%
+      {{hash=KF}{%
+         family={K},
+         familyi={K},
+         given={Fall},
+         giveni={F\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{DMLZKF1}
+    \strng{fullhash}{DMLZKF1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{D}
+    \field{sortinithash}{D}
+    \field{title}{Report from the {{IAB}} Workshop on Routing and Addressing}
+    \verb{url}
+    \verb http://tools.ietf.org/id/draft-iab-raws-report02.txt, April 2007
+    \endverb
+  \endentry
+
+  \entry{dhamdhereTenYearsEvolution2008}{inproceedings}{}
+    \name{author}{2}{}{%
+      {{hash=DA}{%
+         family={Dhamdhere},
+         familyi={D\bibinitperiod},
+         given={Amogh},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=DC}{%
+         family={Dovrolis},
+         familyi={D\bibinitperiod},
+         given={Constantine},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{DADC1}
+    \strng{fullhash}{DADC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{D}
+    \field{sortinithash}{D}
+    \field{booktitle}{Proceedings of the 8th {{ACM SIGCOMM}} Conference on
+  {{Internet}} Measurement Conference - {{IMC}} '08}
+    \verb{doi}
+    \verb 10.1145/1452520.1452543
+    \endverb
+    \field{eventtitle}{The 8th {{ACM SIGCOMM}} Conference}
+    \field{isbn}{978-1-60558-334-1}
+    \field{pages}{183}
+    \field{title}{Ten Years in the Evolution of the Internet Ecosystem}
+    \verb{url}
+    \verb http://portal.acm.org/citation.cfm?doid=1452520.1452543
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Vouliagmeni, Greece}}%
+    }
+    \field{year}{2008}
+  \endentry
+
+  \entry{dhamdhereInternetFlatModeling2010}{inproceedings}{}
+    \name{author}{2}{}{%
+      {{hash=DA}{%
+         family={Dhamdhere},
+         familyi={D\bibinitperiod},
+         given={Amogh},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=DC}{%
+         family={Dovrolis},
+         familyi={D\bibinitperiod},
+         given={Constantine},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{DADC1}
+    \strng{fullhash}{DADC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{shorttitle}
+    \field{sortinit}{D}
+    \field{sortinithash}{D}
+    \field{booktitle}{Proceedings of the 6th {{International COnference}} on -
+  {{Co}}-{{NEXT}} '10}
+    \verb{doi}
+    \verb 10.1145/1921168.1921196
+    \endverb
+    \field{eventtitle}{The 6th {{International COnference}}}
+    \field{isbn}{978-1-4503-0448-1}
+    \field{pages}{1}
+    \field{shorttitle}{The {{Internet}} Is Flat}
+    \field{title}{The {{Internet}} Is Flat: Modeling the Transition from a
+  Transit Hierarchy to a Peering Mesh}
+    \verb{url}
+    \verb http://portal.acm.org/citation.cfm?doid=1921168.1921196
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Philadelphia, Pennsylvania}}%
+    }
+    \field{year}{2010}
+  \endentry
+
+  \entry{BGPchurnCore2012}{article}{}
+    \name{author}{3}{}{%
+      {{hash=EA}{%
+         family={Elmokashfi},
+         familyi={E\bibinitperiod},
+         given={Ahmed},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KA}{%
+         family={Kvalbein},
+         familyi={K\bibinitperiod},
+         given={Amund},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=DC}{%
+         family={Dovrolis},
+         familyi={D\bibinitperiod},
+         given={Constantine},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{IEEE Press}}%
+    }
+    \keyw{BGP,internetworking,routing,scalability}
+    \strng{namehash}{EAKADC1}
+    \strng{fullhash}{EAKADC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{E}
+    \field{sortinithash}{E}
+    \field{issn}{1063-6692}
+    \field{number}{2}
+    \field{pages}{571\bibrangedash 584}
+    \field{pagetotal}{14}
+    \field{title}{{{BGP}} Churn Evolution: {{A}} Perspective from the Core}
+    \field{volume}{20}
+    \field{journaltitle}{IEEE/ACM Trans. Netw.}
+    \field{month}{04}
+    \field{year}{2012}
+  \endentry
+
+  \entry{elmokashfiScalabilityBGPRole2010}{article}{}
+    \name{author}{3}{}{%
+      {{hash=EA}{%
+         family={Elmokashfi},
+         familyi={E\bibinitperiod},
+         given={Ahmed},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=KA}{%
+         family={Kvalbein},
+         familyi={K\bibinitperiod},
+         given={Amund},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=DC}{%
+         family={Dovrolis},
+         familyi={D\bibinitperiod},
+         given={Constantine},
+         giveni={C\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{EAKADC1}
+    \strng{fullhash}{EAKADC1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{shorttitle}
+    \field{sortinit}{E}
+    \field{sortinithash}{E}
+    \verb{doi}
+    \verb 10.1109/JSAC.2010.101003
+    \endverb
+    \field{issn}{0733-8716}
+    \field{number}{8}
+    \field{pages}{1250\bibrangedash 1261}
+    \field{shortjournal}{IEEE J. Select. Areas Commun.}
+    \field{shorttitle}{On the {{Scalability}} of {{BGP}}}
+    \field{title}{On the {{Scalability}} of {{BGP}}: {{The Role}} of {{Topology
+  Growth}}}
+    \verb{url}
+    \verb http://ieeexplore.ieee.org/document/5586438/
+    \endverb
+    \field{volume}{28}
+    \verb{file}
+    \verb C\:\\Users\\Matteo\\Zotero\\storage\\NZARTG8N\\Elmokashfi et al. - 20
+    \verb 10 - On the Scalability of BGP The Role of Topology Gr.pdf
+    \endverb
+    \field{journaltitle}{IEEE Journal on Selected Areas in Communications}
+    \field{month}{10}
+    \field{year}{2010}
+  \endentry
+
+  \entry{gavoilleMemoryRequirementRouting1996}{inproceedings}{}
+    \name{author}{2}{}{%
+      {{hash=GC}{%
+         family={Gavoille},
+         familyi={G\bibinitperiod},
+         given={Cyril},
+         giveni={C\bibinitperiod},
+      }}%
+      {{hash=PS}{%
+         family={Pérennès},
+         familyi={P\bibinitperiod},
+         given={Stéphane},
+         giveni={S\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{GCPS1}
+    \strng{fullhash}{GCPS1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{G}
+    \field{sortinithash}{G}
+    \field{booktitle}{Proceedings of the Fifteenth Annual {{ACM}} Symposium on
+  {{Principles}} of Distributed Computing - {{PODC}} '96}
+    \verb{doi}
+    \verb 10.1145/248052.248075
+    \endverb
+    \field{eventtitle}{The Fifteenth Annual {{ACM}} Symposium}
+    \field{isbn}{978-0-89791-800-8}
+    \field{pages}{125\bibrangedash 133}
+    \field{title}{Memory Requirement for Routing in Distributed Networks}
+    \verb{url}
+    \verb http://portal.acm.org/citation.cfm?doid=248052.248075
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Philadelphia, Pennsylvania, United States}}%
+    }
+    \field{year}{1996}
+  \endentry
+
+  \entry{giotsasInferringMultilateralPeering2013}{inproceedings}{}
+    \name{author}{4}{}{%
+      {{hash=GV}{%
+         family={Giotsas},
+         familyi={G\bibinitperiod},
+         given={Vasileios},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=ZS}{%
+         family={Zhou},
+         familyi={Z\bibinitperiod},
+         given={Shi},
+         giveni={S\bibinitperiod},
+      }}%
+      {{hash=LM}{%
+         family={Luckie},
+         familyi={L\bibinitperiod},
+         given={Matthew},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=ck}{%
+         family={{claffy}},
+         familyi={c\bibinitperiod},
+         given={kc},
+         giveni={k\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{GV+1}
+    \strng{fullhash}{GVZSLMck1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{G}
+    \field{sortinithash}{G}
+    \field{booktitle}{Proceedings of the Ninth {{ACM}} Conference on
+  {{Emerging}} Networking Experiments and Technologies - {{CoNEXT}} '13}
+    \verb{doi}
+    \verb 10.1145/2535372.2535390
+    \endverb
+    \field{eventtitle}{The Ninth {{ACM}} Conference}
+    \field{isbn}{978-1-4503-2101-3}
+    \field{pages}{247\bibrangedash 258}
+    \field{title}{Inferring Multilateral Peering}
+    \verb{url}
+    \verb http://dl.acm.org/citation.cfm?doid=2535372.2535390
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Santa Barbara, California, USA}}%
+    }
+    \verb{file}
+    \verb C\:\\Users\\Matteo\\Zotero\\storage\\YH643GNA\\Giotsas et al. - 2013
+    \verb - Inferring multilateral peering.pdf
+    \endverb
+    \field{year}{2013}
+  \endentry
+
+  \entry{krioukovCompactRoutingInternet2007}{article}{}
+    \name{author}{4}{}{%
+      {{hash=KD}{%
+         family={Krioukov},
+         familyi={K\bibinitperiod},
+         given={Dmitri},
+         giveni={D\bibinitperiod},
+      }}%
+      {{hash=cck}{%
+         prefix={c},
+         prefixi={c},
+         family={{claffy}},
+         familyi={c\bibinitperiod},
+         given={k},
+         giveni={k},
+      }}%
+      {{hash=FK}{%
+         family={Fall},
+         familyi={F\bibinitperiod},
+         given={Kevin},
+         giveni={K\bibinitperiod},
+      }}%
+      {{hash=BA}{%
+         family={Brady},
+         familyi={B\bibinitperiod},
+         given={Arthur},
+         giveni={A\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{KD+1}
+    \strng{fullhash}{KDckcFKBA1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{K}
+    \field{sortinithash}{K}
+    \verb{doi}
+    \verb 10.1145/1273445.1273450
+    \endverb
+    \field{issn}{0146-4833}
+    \field{number}{3}
+    \field{pages}{41\bibrangedash 52}
+    \field{shortjournal}{SIGCOMM Comput. Commun. Rev.}
+    \field{title}{On Compact Routing for the Internet}
+    \verb{url}
+    \verb https://dl.acm.org/doi/10.1145/1273445.1273450
+    \endverb
+    \field{volume}{37}
+    \field{langid}{english}
+    \verb{file}
+    \verb C\:\\Users\\Matteo\\Zotero\\storage\\DMRGG8YA\\Krioukov et al. - 2007
+    \verb  - On compact routing for the internet.pdf
+    \endverb
+    \field{journaltitle}{ACM SIGCOMM Computer Communication Review}
+    \field{day}{20}
+    \field{month}{07}
+    \field{year}{2007}
+  \endentry
+
+  \entry{lixingaoStableInternetRouting2001}{article}{}
+    \name{author}{2}{}{%
+      {{hash=L}{%
+         family={{Lixin Gao}},
+         familyi={L\bibinitperiod},
+      }}%
+      {{hash=RJ}{%
+         family={Rexford},
+         familyi={R\bibinitperiod},
+         given={J.},
+         giveni={J\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{LRJ1}
+    \strng{fullhash}{LRJ1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{L}
+    \field{sortinithash}{L}
+    \verb{doi}
+    \verb 10.1109/90.974523
+    \endverb
+    \field{issn}{10636692}
+    \field{number}{6}
+    \field{pages}{681\bibrangedash 692}
+    \field{shortjournal}{IEEE/ACM Trans. Networking}
+    \field{title}{Stable {{Internet}} Routing without Global Coordination}
+    \verb{url}
+    \verb http://ieeexplore.ieee.org/document/974523/
+    \endverb
+    \field{volume}{9}
+    \field{journaltitle}{IEEE/ACM Transactions on Networking}
+    \field{year}{Dec./2001}
+  \endentry
+
+  \entry{luckieRelationshipsCustomerCones2013}{inproceedings}{}
+    \name{author}{5}{}{%
+      {{hash=LM}{%
+         family={Luckie},
+         familyi={L\bibinitperiod},
+         given={Matthew},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=HB}{%
+         family={Huffaker},
+         familyi={H\bibinitperiod},
+         given={Bradley},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=DA}{%
+         family={Dhamdhere},
+         familyi={D\bibinitperiod},
+         given={Amogh},
+         giveni={A\bibinitperiod},
+      }}%
+      {{hash=GV}{%
+         family={Giotsas},
+         familyi={G\bibinitperiod},
+         given={Vasileios},
+         giveni={V\bibinitperiod},
+      }}%
+      {{hash=ck}{%
+         family={{claffy}},
+         familyi={c\bibinitperiod},
+         given={kc},
+         giveni={k\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{LM+1}
+    \strng{fullhash}{LMHBDAGVck1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{L}
+    \field{sortinithash}{L}
+    \field{booktitle}{Proceedings of the 2013 Conference on {{Internet}}
+  Measurement Conference - {{IMC}} '13}
+    \verb{doi}
+    \verb 10.1145/2504730.2504735
+    \endverb
+    \field{eventtitle}{The 2013 Conference}
+    \field{isbn}{978-1-4503-1953-9}
+    \field{pages}{243\bibrangedash 256}
+    \field{title}{{{AS}} Relationships, Customer Cones, and Validation}
+    \verb{url}
+    \verb http://dl.acm.org/citation.cfm?doid=2504730.2504735
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Barcelona, Spain}}%
+    }
+    \verb{file}
+    \verb C\:\\Users\\Matteo\\Zotero\\storage\\XPJ3SMBV\\Luckie et al. - 2013 -
+    \verb  AS relationships, customer cones, and validation.pdf
+    \endverb
+    \field{year}{2013}
+  \endentry
+
+  \entry{Oliveira_measurementof}{article}{}
+    \name{author}{8}{}{%
+      {{hash=ORV}{%
+         family={Oliveira},
+         familyi={O\bibinitperiod},
+         given={Ricardo\bibnamedelima V.},
+         giveni={R\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+      {{hash=IrR}{%
+         family={Izhak-ratzin},
+         familyi={I\bibinithyphendelim r\bibinitperiod},
+         given={Rafit},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=ZB}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Beichuan},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=ZL}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Lixia},
+         giveni={L\bibinitperiod},
+      }}%
+      {{hash=ORV}{%
+         family={Oliveira},
+         familyi={O\bibinitperiod},
+         given={Ricardo\bibnamedelima V.},
+         giveni={R\bibinitperiod\bibinitdelim V\bibinitperiod},
+      }}%
+      {{hash=IrR}{%
+         family={Izhak-ratzin},
+         familyi={I\bibinithyphendelim r\bibinitperiod},
+         given={Rafit},
+         giveni={R\bibinitperiod},
+      }}%
+      {{hash=ZB}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Beichuan},
+         giveni={B\bibinitperiod},
+      }}%
+      {{hash=ZL}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Lixia},
+         giveni={L\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{ORV+1}
+    \strng{fullhash}{ORVIrRZBZLORVIrRZBZL1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{O}
+    \field{sortinithash}{O}
+    \field{title}{Measurement of Highly Active Prefixes in {{BGP}}}
+    \field{volume}{2005}
+    \field{journaltitle}{IEEE GLOBECOM}
+  \endentry
+
+  \entry{Potaroo}{online}{}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{P}
+    \field{sortinithash}{P}
+    \field{title}{Potaroo}
+    \verb{url}
+    \verb http://bgp.potaroo.net
+    \endverb
+  \endentry
+
+  \entry{RoutingAlgorithmsSimulator}{online}{}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{R}
+    \field{sortinithash}{R}
+    \field{title}{Routing {{Algorithms Simulator}}}
+    \verb{url}
+    \verb https://github.com/dedis/student_20_compactInternet
+    \endverb
+  \endentry
+
+  \entry{thorupApproximateDistanceOracles2005}{article}{}
+    \name{author}{2}{}{%
+      {{hash=TM}{%
+         family={Thorup},
+         familyi={T\bibinitperiod},
+         given={Mikkel},
+         giveni={M\bibinitperiod},
+      }}%
+      {{hash=ZU}{%
+         family={Zwick},
+         familyi={Z\bibinitperiod},
+         given={Uri},
+         giveni={U\bibinitperiod},
+      }}%
+    }
+    \strng{namehash}{TMZU1}
+    \strng{fullhash}{TMZU1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{T}
+    \field{sortinithash}{T}
+    \verb{doi}
+    \verb 10.1145/1044731.1044732
+    \endverb
+    \field{issn}{00045411}
+    \field{number}{1}
+    \field{pages}{1\bibrangedash 24}
+    \field{shortjournal}{J. ACM}
+    \field{title}{Approximate Distance Oracles}
+    \verb{url}
+    \verb http://portal.acm.org/citation.cfm?doid=1044731.1044732
+    \endverb
+    \field{volume}{52}
+    \field{langid}{english}
+    \verb{file}
+    \verb C\:\\Users\\Matteo\\Zotero\\storage\\PJZBEUCW\\Thorup and Zwick - 200
+    \verb 5 - Approximate distance oracles.pdf
+    \endverb
+    \field{journaltitle}{Journal of the ACM}
+    \field{day}{01}
+    \field{month}{01}
+    \field{year}{2005}
+  \endentry
+
+  \entry{wangQuantifyingFlatteningInternet2016}{inproceedings}{}
+    \name{author}{2}{}{%
+      {{hash=WY}{%
+         family={Wang},
+         familyi={W\bibinitperiod},
+         given={Yangyang},
+         giveni={Y\bibinitperiod},
+      }}%
+      {{hash=ZK}{%
+         family={Zhang},
+         familyi={Z\bibinitperiod},
+         given={Keyao},
+         giveni={K\bibinitperiod},
+      }}%
+    }
+    \list{publisher}{1}{%
+      {{ACM Press}}%
+    }
+    \strng{namehash}{WYZK1}
+    \strng{fullhash}{WYZK1}
+    \field{labelnamesource}{author}
+    \field{labeltitlesource}{title}
+    \field{sortinit}{W}
+    \field{sortinithash}{W}
+    \field{booktitle}{Proceedings of the 11th {{International Conference}} on
+  {{Future Internet Technologies}} - {{CFI}} '16}
+    \verb{doi}
+    \verb 10.1145/2935663.2935682
+    \endverb
+    \field{eventtitle}{The 11th {{International Conference}}}
+    \field{isbn}{978-1-4503-4181-3}
+    \field{pages}{113\bibrangedash 117}
+    \field{title}{Quantifying the {{Flattening}} of {{Internet Topology}}}
+    \verb{url}
+    \verb http://dl.acm.org/citation.cfm?doid=2935663.2935682
+    \endverb
+    \field{langid}{english}
+    \list{location}{1}{%
+      {{Nanjing, China}}%
+    }
+    \field{year}{2016}
+    \field{urlday}{26}
+    \field{urlmonth}{05}
+    \field{urlyear}{2020}
+  \endentry
+\enddatalist
+\endinput

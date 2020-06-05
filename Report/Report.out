@@ -1,0 +1,18 @@
+\BOOKMARK [0][-]{chapter.1}{Motivation}{}% 1
+\BOOKMARK [0][-]{chapter.2}{The AS graph}{}% 2
+\BOOKMARK [0][-]{chapter.3}{Adapt TZ to the Internet}{}% 3
+\BOOKMARK [1][-]{section.3.1}{Landmarks Selection}{chapter.3}% 4
+\BOOKMARK [1][-]{section.3.2}{GR compliance}{chapter.3}% 5
+\BOOKMARK [0][-]{chapter.4}{TZ on dynamic topologies}{}% 6
+\BOOKMARK [1][-]{section.4.1}{Restore missing information}{chapter.4}% 7
+\BOOKMARK [2][-]{subsection.4.1.1}{d Wi\(z\)}{section.4.1}% 8
+\BOOKMARK [2][-]{subsection.4.1.2}{d B\(z\)}{section.4.1}% 9
+\BOOKMARK [1][-]{section.4.2}{Measure deletion effects}{chapter.4}% 10
+\BOOKMARK [2][-]{subsection.4.2.1}{Impact}{section.4.2}% 11
+\BOOKMARK [2][-]{subsection.4.2.2}{Updates}{section.4.2}% 12
+\BOOKMARK [1][-]{section.4.3}{Simulate edge deletions}{chapter.4}% 13
+\BOOKMARK [2][-]{subsection.4.3.1}{Witness level change}{section.4.3}% 14
+\BOOKMARK [2][-]{subsection.4.3.2}{Impact measurement}{section.4.3}% 15
+\BOOKMARK [2][-]{subsection.4.3.3}{Stretch deterioration}{section.4.3}% 16
+\BOOKMARK [1][-]{section.4.4}{Simulation with real link failures}{chapter.4}% 17
+\BOOKMARK [0][-]{section*.2}{Bibliography}{}% 18
